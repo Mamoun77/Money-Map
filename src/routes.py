@@ -18,7 +18,7 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # type: ignore # for redirect to login if not logged in
 
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'users' # specifys the table name in the original database
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
@@ -39,15 +39,59 @@ def login():
         
         user = User.query.filter_by(username=username, password=password).first() # filtering the user by username and password from the database
         
+        # if the user is found and the password is correct
         if user:
             login_user(user)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home'))
+            return redirect(next_page) if next_page else redirect(url_for('home')) # redirect to the desired page or the home page
         
+        # Check if username exists
+        user_exists = User.query.filter_by(username=username).first()
+        if not user_exists:
+            flash('Account not found. Please register first.', 'warning')
+            return redirect(url_for('register'))
+        
+        # if the user exists but the password is incorrect
         flash('Invalid username or password', 'danger')
         return render_template('login.html')
     
     return render_template('login.html') # if the mothod is GET, render the login page
+
+# The logout route
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('login'))
+
+# The register route
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'danger')
+            return render_template('register.html')
+        
+        user = User(username=username, password=password)
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please login.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
+
+# @app.route('/test')
+# def test():
+#     flash('Registration successful! Please login.', 'success')
+#     return ""
 
 
 app.run(debug=True)
