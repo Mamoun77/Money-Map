@@ -69,6 +69,8 @@ def logout():
 # The register route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+
+
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     
@@ -101,6 +103,7 @@ def ai_agent():
 # def test():
 #     flash('Registration successful! Please login.', 'success')
 #     return ""
+
 
 
 app.run(debug=True)
