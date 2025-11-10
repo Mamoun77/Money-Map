@@ -1,3 +1,4 @@
+from ai_integrations.conversational_ai_agent import invoke_agent
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -87,6 +88,14 @@ def register():
         return redirect(url_for('login'))
     
     return render_template('register.html')
+
+@app.route('/ai_agent', methods=['GET', 'POST'])
+def ai_agent():
+    if request.method == 'POST':
+        query = request.form.get('query')
+        response = invoke_agent(query)
+        return render_template('ai_agent.html', response=response)
+    return render_template('ai_agent.html') # if the method is GET
 
 # @app.route('/test')
 # def test():
