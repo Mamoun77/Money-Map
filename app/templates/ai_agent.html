@@ -2,19 +2,125 @@
 <html lang="en">
 
 <head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ai_agent.css') }}">
     <meta charset="UTF-8">
-    <title>Empty Page</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Financial Advisor</title>
 </head>
 
 <body>
-    <form method="POST">
-        <input type="text" name="query" required>
-        <button type="submit">Submit</button>
-    </form>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI Financial Advisor</h1>
+            <p>Get personalized financial advice based on your spending patterns</p>
+        </div>
 
-    {% if response %}
-    <p>{{ response }}</p>
-    {% endif %}
+        <div class="chat-container" id="chatContainer">
+            <div class="empty-state" id="emptyState">
+                <h2>👋 Hello! How can I help you today?</h2>
+                <p>Ask me anything about your finances, budgeting, or spending habits</p>
+                <div class="suggestion-chips">
+                    <div class="chip" onclick="sendSuggestion('Analyze my spending this month')">Analyze my spending
+                    </div>
+                    <div class="chip" onclick="sendSuggestion('How can I save more money?')">Savings tips</div>
+                    <div class="chip" onclick="sendSuggestion('What are my biggest expenses?')">Biggest expenses</div>
+                    <div class="chip" onclick="sendSuggestion('Create a budget plan for me')">Budget plan</div>
+                </div>
+            </div>
+            <div class="loading" id="loading">AI is thinking...</div>
+        </div>
+
+        <div class="input-area">
+            <div class="input-container">
+                <input type="text" id="queryInput" placeholder="Ask me about your finances..."
+                    onkeypress="handleKeyPress(event)">
+                <button id="sendBtn" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const queryInput = document.getElementById('queryInput');
+        const sendBtn = document.getElementById('sendBtn'); // The send button element
+        const loading = document.getElementById('loading');
+        const emptyState = document.getElementById('emptyState');
+
+        // for sending the input when the user presses enter
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Fills input with suggestion text and sends it if the user chooses a suggestion
+        function sendSuggestion(text) {
+            queryInput.value = text;
+            sendMessage();
+        }
+
+        // Creates and appends a message bubble to the chat (user or AI)
+        function addMessage(content, isUser) {
+
+            // Hide welcome state afte the first message
+            if (emptyState) {
+                emptyState.style.display = 'none';
+            }
+
+            const messageDiv = document.createElement('div'); // creates a new div element for the new message
+            messageDiv.className = `message ${isUser ? 'user' : 'ai'}`; // 
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
+                <div class="message-content">${content}</div>
+            `;
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Sends user query to backend and displays the AI response
+        async function sendMessage() {
+            const query = queryInput.value.trim(); // Get user's input and remove extra spaces
+            if (!query) return; // Do nothing if input is empty
+
+            addMessage(query, true); // Display user's message in the chat
+            queryInput.value = ''; // Clear input box
+
+            // Disable input and show loading while waiting for response
+            sendBtn.disabled = true;
+            queryInput.disabled = true;
+            loading.classList.add('active');
+
+            try {
+                const formData = new FormData(); // Prepare data to send to the backend
+                formData.append('query', query); // Add user query
+
+                // Send POST request to backend endpoint
+                const response = await fetch('/ai_agent', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Network response was not ok');
+
+                const data = await response.json();
+                const formated_response = data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                addMessage(formated_response, false);
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage('Sorry, I encountered an error. Please try again.', false); // Show error message
+
+            } finally {
+                // Re-enable input and hide loading
+                sendBtn.disabled = false;
+                queryInput.disabled = false;
+                loading.classList.remove('active');
+                queryInput.focus(); // Put cursor back in input
+            }
+        }
+    </script>
 </body>
 
 </html>

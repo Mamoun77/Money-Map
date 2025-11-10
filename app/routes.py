@@ -1,5 +1,5 @@
 from ai_integrations.conversational_ai_agent import invoke_agent
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
@@ -96,7 +96,7 @@ def ai_agent():
     if request.method == 'POST':
         query = request.form.get('query')
         response = invoke_agent(query)
-        return render_template('ai_agent.html', response=response)
+        return jsonify({'response': response})
     return render_template('ai_agent.html') # if the method is GET
 
 # @app.route('/test')
