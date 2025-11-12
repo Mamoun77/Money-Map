@@ -106,7 +106,11 @@ def ai_agent():
 @app.route('/home')
 # @login_required
 def home():
-    return render_template('home.html', username=current_user.username)
+    return render_template('home.html', username="test_username") #current_user.username)
+
+@app.route('/accounts')
+def accounts():
+    return render_template('accounts.html')
 
 # @app.route('/test')
 # def test():
