@@ -238,3 +238,10 @@
             font-size: 20px;
             font-weight: 700;
         }
+
+        .no-accounts {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 16px;
+        }

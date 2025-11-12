@@ -23,7 +23,7 @@
             <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
             <div class="user-menu">
                 <button class="user-btn" onclick="toggleUserMenu()">
-                    <span id="username">User</span>
+                    <span id="username">{{ username }}</span>
                     <span>▼</span>
                 </button>
                 <div class="user-dropdown" id="userDropdown">
@@ -37,28 +37,22 @@
     <div class="main-content">
         <div class="total-balance">
             <h2>Total Balance</h2>
-            <div class="amount">$5,420.00</div>
+            <div class="amount">{{ total_balance }}</div>
         </div>
 
         <div class="accounts-section">
             <h2>Your Accounts</h2>
             <div class="account-list">
+                {% if accounts %}
+                {% for account in accounts %}
                 <div class="account-item">
-                    <div class="account-name">💳 Checking Account</div>
-                    <div class="account-balance">$2,340.00</div>
+                    <div class="account-name">{{ account.icon }} {{ account.name }}</div>
+                    <div class="account-balance">{{ account.balance }}</div>
                 </div>
-                <div class="account-item">
-                    <div class="account-name">💰 Savings Account</div>
-                    <div class="account-balance">$3,080.00</div>
-                </div>
-                <div class="account-item">
-                    <div class="account-name">💵 Cash</div>
-                    <div class="account-balance">$450.00</div>
-                </div>
-                <div class="account-item">
-                    <div class="account-name">🏦 Investment Account</div>
-                    <div class="account-balance">$1,550.00</div>
-                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-accounts">No accounts found. Create your first account to get started!</div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -81,6 +75,8 @@
         function addRecord() {
             // Redirect to add record page or open modal
         }
+
+
 
         // Display username
         document.getElementById('username').textContent = '{{ username }}';

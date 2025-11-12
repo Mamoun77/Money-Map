@@ -104,13 +104,33 @@ def ai_agent():
     return render_template('ai_agent.html') # if the method is GET
 
 @app.route('/home')
+
 # @login_required
 def home():
-    return render_template('home.html', username="test_username") #current_user.username)
+
+    accounts_test = [
+        {'name': 'Checking test Account', 'balance': '$2,340.00', 'icon': '💳'},
+        {'name': 'Savings Account', 'balance': '$3,080.00', 'icon': '💰'},
+        {'name': 'Cash', 'balance': '$450.00', 'icon': '💵'},
+        {'name': 'Investment Account', 'balance': '$1,550.00', 'icon': '🏦'}
+    ]
+    # return render_template('home.html', current_user.username)
+    return render_template('home.html', 
+                         username="current_user.username",
+                         accounts=accounts_test,
+                         total_balance='$3,600.00')
 
 @app.route('/accounts')
 def accounts():
     return render_template('accounts.html')
+
+@app.route('/records')
+def records():
+    return render_template('records.html')
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
 
 # @app.route('/test')
 # def test():
