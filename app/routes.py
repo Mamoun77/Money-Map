@@ -101,7 +101,7 @@ def ai_agent():
         query = request.form.get('query')
         response = invoke_agent(query)
         return jsonify({'response': response})
-    return render_template('ai_agent.html') # if the method is GET
+    return render_template('ai_agent.html', username="current_user.username") # if the method is GET
 
 @app.route('/home')
 
