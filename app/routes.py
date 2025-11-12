@@ -58,19 +58,9 @@ def login():
     
     return render_template('login.html') # if the mothod is GET, render the login page
 
-# The logout route
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    flash('You have been logged out', 'info')
-    return redirect(url_for('login'))
-
 # The register route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-
-
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     
@@ -90,6 +80,19 @@ def register():
         return redirect(url_for('login'))
     
     return render_template('register.html')
+
+# The logout route
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('You have been logged out', 'info')
+    return redirect(url_for('login'))
+
+# The home route
+@app.route('/')
+def home():
+    return render_template('home.html')
 
 @app.route('/ai_agent', methods=['GET', 'POST'])
 def ai_agent():

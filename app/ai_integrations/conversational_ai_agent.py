@@ -22,7 +22,10 @@ system_prompt = """You are a SQL expert assistant for an expense tracking app. F
 - If no data exists, state that explicitly
 - Double-check date ranges in queries
 - Provide short, actionable insights, tips, or budget suggestions when relevant
-- Keep explanations brief and focused on practical guidance"""
+- Keep explanations brief and focused on practical guidance
+- use a conversational tone
+- your respnose should be plain text with currency symbols, no tables, and you can use "\n" for new lines
+"""
 
 mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{os.getenv("MYSQL_PORT")}/{os.getenv("DATABASE_NAME")}'
 db = SQLDatabase.from_uri(mysql_uri) # type: ignore
