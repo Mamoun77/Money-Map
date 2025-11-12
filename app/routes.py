@@ -104,7 +104,6 @@ def ai_agent():
     return render_template('ai_agent.html', username="current_user.username") # if the method is GET
 
 @app.route('/home')
-
 # @login_required
 def home():
 
@@ -156,8 +155,71 @@ def accounts():
     return render_template('accounts.html', username="current_user.username", accounts=accounts_list)
 
 @app.route('/records')
+# @login_required
 def records():
-    return render_template('records.html')
+    # Test data - replace with actual database queries
+    records_test = [
+        {
+            'id': 1,
+            'description': 'Grocery Shopping',
+            'amount': '-$85.50',
+            'type': 'expense',
+            'category': 'Food & Dining',
+            'account': 'Checking Account',
+            'date': '2025-01-15',
+            'time': '14:30'
+        },
+        {
+            'id': 2,
+            'description': 'Salary Deposit',
+            'amount': '+$3,200.00',
+            'type': 'income',
+            'category': 'Salary',
+            'account': 'Checking Account',
+            'date': '2024-01-15',
+            'time': '09:00'
+        },
+        {
+            'id': 3,
+            'description': 'Coffee Shop',
+            'amount': '-$4.50',
+            'type': 'expense',
+            'category': 'Food & Dining',
+            'account': 'Cash',
+            'date': '2024-01-14',
+            'time': '08:15'
+        },
+        {
+            'id': 4,
+            'description': 'Electric Bill',
+            'amount': '-$120.00',
+            'type': 'expense',
+            'category': 'Utilities',
+            'account': 'Checking Account',
+            'date': '2024-01-13',
+            'time': '16:45'
+        },
+        {
+            'id': 5,
+            'description': 'Freelance Project',
+            'amount': '+$500.00',
+            'type': 'income',
+            'category': 'Freelance',
+            'account': 'Savings Account',
+            'date': '2024-01-12',
+            'time': '11:20'
+        }
+    ]
+    
+    # Filter options - replace with actual database queries
+    accounts_list = ['Checking Account', 'Savings Account', 'Cash', 'Investment Account']
+    categories_list = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
+    
+    return render_template('records.html',
+                         username="current_user.username",
+                         records=records_test,
+                         accounts=accounts_list,
+                         categories=categories_list)
 
 @app.route('/settings')
 def settings():

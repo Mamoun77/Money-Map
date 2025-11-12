@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/records.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Map - Records</title>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo" onclick="window.location.href='/home'">Money Map</div>
+            <ul class="nav-menu">
+                <li><a href="/home">Dashboard</a></li>
+                <li><a href="/accounts">Accounts</a></li>
+                <li><a href="/records" class="active">Records</a></li>
+                <li><a href="/ai_agent">AI Agent</a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
+            <div class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <span id="username">{{ username }}</span>
+                    <span>▼</span>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/settings">⚙️ Settings</a>
+                    <a href="/logout">🚪 Log Out</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <!-- Filter Sidebar -->
+        <aside class="filter-sidebar">
+            <div class="filter-header">
+                <h2>Filters</h2>
+                <button class="reset-btn" onclick="resetFilters()">Reset</button>
+            </div>
+
+            <div class="filter-group">
+                <label for="searchBox">Search</label>
+                <input type="text" id="searchBox" placeholder="Search by description..." oninput="applyFilters()">
+            </div>
+
+            <div class="filter-group">
+                <label for="dateRange">Date Range</label>
+                <select id="dateRange" onchange="applyFilters()">
+                    <option value="30">Last 30 Days</option>
+                    <option value="7">Last 7 Days</option>
+                    <option value="90">Last 90 Days</option>
+                    <option value="365">Last Year</option>
+                    <option value="all">All Time</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+
+            <div class="filter-group custom-date-range" id="customDateRange" style="display: none;">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" onchange="applyFilters()">
+                <label for="endDate" style="margin-top: 10px;">End Date</label>
+                <input type="date" id="endDate" onchange="applyFilters()">
+            </div>
+
+            <div class="filter-group">
+                <label for="sortBy">Sort By</label>
+                <select id="sortBy" onchange="applyFilters()">
+                    <option value="date-desc">Date (Newest First)</option>
+                    <option value="date-asc">Date (Oldest First)</option>
+                    <option value="amount-desc">Amount (High to Low)</option>
+                    <option value="amount-asc">Amount (Low to High)</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterAccount">Account</label>
+                <select id="filterAccount" onchange="applyFilters()">
+                    <option value="">All Accounts</option>
+                    {% for account in accounts %}
+                    <option value="{{ account }}">{{ account }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterCategory">Category</label>
+                <select id="filterCategory" onchange="applyFilters()">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category }}">{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="filterType">Type</label>
+                <select id="filterType" onchange="applyFilters()">
+                    <option value="">All Types</option>
+                    <option value="income">Income</option>
+                    <option value="expense">Expense</option>
+                </select>
+            </div>
+        </aside>
+
+        <!-- Records Content -->
+        <main class="records-content">
+            <div class="records-header">
+                <h1>Transaction Records</h1>
+                <div class="records-count">
+                    Showing <span id="recordCount">{{ records|length }}</span> records
+                </div>
+            </div>
+
+            <div class="records-list" id="recordsList">
+                {% if records %}
+                {% for record in records %}
+                <div class="record-item" data-type="{{ record.type }}" data-category="{{ record.category }}"
+                    data-account="{{ record.account }}" data-date="{{ record.date }}" data-amount="{{ record.amount }}">
+                    <div class="record-main">
+                        <div class="record-icon">
+                            {% if record.type == 'income' %}
+                            <span class="icon-income">↓</span>
+                            {% else %}
+                            <span class="icon-expense">↑</span>
+                            {% endif %}
+                        </div>
+                        <div class="record-details">
+                            <div class="record-description">{{ record.description }}</div>
+                            <div class="record-meta">
+                                <span class="meta-item">📅 {{ record.date }}</span>
+                                <span class="meta-item">🕒 {{ record.time }}</span>
+                                <span class="meta-item">🏷️ {{ record.category }}</span>
+                                <span class="meta-item">💳 {{ record.account }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="record-right">
+                        <div
+                            class="record-amount {% if record.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
+                            {{ record.amount }}
+                        </div>
+                        <div class="record-actions">
+                            <button class="action-btn edit-btn" onclick="editRecord({{ record.id }})" title="Edit">
+                                ✏️
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteRecord({{ record.id }})"
+                                title="Delete">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="no-records">
+                    <p>No records found. Start tracking your finances by adding your first record!</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Store all records for filtering
+        let allRecords = Array.from(document.querySelectorAll('.record-item'));
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function (event) {
+            const userMenu = document.querySelector('.user-menu');
+            if (!userMenu.contains(event.target)) {
+                document.getElementById('userDropdown').classList.remove('active');
+            }
+        });
+
+        function addRecord() {
+            // Redirect to add record page or open modal
+            alert('Add Record functionality - to be implemented');
+        }
+
+        function editRecord(recordId) {
+            // Edit record functionality - to be implemented
+            console.log('Edit record:', recordId);
+        }
+
+        function deleteRecord(recordId) {
+            // Delete record functionality - to be implemented
+            console.log('Delete record:', recordId);
+        }
+
+        function resetFilters() {
+            document.getElementById('searchBox').value = '';
+            document.getElementById('dateRange').value = '30';
+            document.getElementById('sortBy').value = 'date-desc';
+            document.getElementById('filterAccount').value = '';
+            document.getElementById('filterCategory').value = '';
+            document.getElementById('filterType').value = '';
+            document.getElementById('customDateRange').style.display = 'none';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const searchQuery = document.getElementById('searchBox').value.toLowerCase();
+            const dateRange = document.getElementById('dateRange').value;
+            const sortBy = document.getElementById('sortBy').value;
+            const filterAccount = document.getElementById('filterAccount').value;
+            const filterCategory = document.getElementById('filterCategory').value;
+            const filterType = document.getElementById('filterType').value;
+
+            // Show/hide custom date range inputs
+            const customDateRange = document.getElementById('customDateRange');
+            if (dateRange === 'custom') {
+                customDateRange.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+            }
+
+            // Calculate date range
+            const today = new Date();
+            let startDate = new Date('1900-01-01'); // Default to very old date for "all time"
+
+            if (dateRange !== 'all' && dateRange !== 'custom') {
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - parseInt(dateRange));
+            } else if (dateRange === 'custom') {
+                const customStart = document.getElementById('startDate').value;
+                const customEnd = document.getElementById('endDate').value;
+                if (customStart) startDate = new Date(customStart);
+            }
+
+            const endDate = dateRange === 'custom' && document.getElementById('endDate').value
+                ? new Date(document.getElementById('endDate').value)
+                : today;
+
+            // Filter records
+            let filteredRecords = allRecords.filter(record => {
+                const recordDate = new Date(record.dataset.date);
+                const recordDescription = record.querySelector('.record-description').textContent.toLowerCase();
+
+                const matchSearch = !searchQuery || recordDescription.includes(searchQuery);
+                const matchDate = recordDate >= startDate && recordDate <= endDate;
+                const matchAccount = !filterAccount || record.dataset.account === filterAccount;
+                const matchCategory = !filterCategory || record.dataset.category === filterCategory;
+                const matchType = !filterType || record.dataset.type === filterType;
+
+                return matchSearch && matchDate && matchAccount && matchCategory && matchType;
+            });
+
+            // Sort records
+            filteredRecords.sort((a, b) => {
+                if (sortBy === 'date-desc') {
+                    return new Date(b.dataset.date) - new Date(a.dataset.date);
+                } else if (sortBy === 'date-asc') {
+                    return new Date(a.dataset.date) - new Date(b.dataset.date);
+                } else if (sortBy === 'amount-desc') {
+                    const amountA = parseFloat(a.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    const amountB = parseFloat(b.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    return Math.abs(amountB) - Math.abs(amountA);
+                } else if (sortBy === 'amount-asc') {
+                    const amountA = parseFloat(a.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    const amountB = parseFloat(b.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    return Math.abs(amountA) - Math.abs(amountB);
+                }
+            });
+
+            // Update display
+            const recordsList = document.getElementById('recordsList');
+            recordsList.innerHTML = '';
+
+            if (filteredRecords.length > 0) {
+                filteredRecords.forEach(record => {
+                    recordsList.appendChild(record);
+                });
+            } else {
+                recordsList.innerHTML = '<div class="no-records"><p>No records match your filters.</p></div>';
+            }
+
+            // Update count
+            document.getElementById('recordCount').textContent = filteredRecords.length;
+        }
+
+        // Display username
+        document.getElementById('username').textContent = '{{ username }}';
+
+        // Apply default filter (last 30 days) on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            applyFilters();
+        });
+    </script>
+</body>
+
+</html>
