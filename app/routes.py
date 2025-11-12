@@ -91,8 +91,9 @@ def logout():
 
 # The home route
 @app.route('/')
-def home():
-    return render_template('home.html')
+# @login_required
+def other():
+    return redirect(url_for('home'))
 
 @app.route('/ai_agent', methods=['GET', 'POST'])
 def ai_agent():
@@ -101,6 +102,11 @@ def ai_agent():
         response = invoke_agent(query)
         return jsonify({'response': response})
     return render_template('ai_agent.html') # if the method is GET
+
+@app.route('/home')
+# @login_required
+def home():
+    return render_template('home.html', username=current_user.username)
 
 # @app.route('/test')
 # def test():
