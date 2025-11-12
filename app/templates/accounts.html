@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/accounts.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Map - Accounts</title>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo" onclick="window.location.href='/home'">Money Map</div>
+            <ul class="nav-menu">
+                <li><a href="/home">Dashboard</a></li>
+                <li><a href="/accounts" class="active">Accounts</a></li>
+                <li><a href="/records">Records</a></li>
+                <li><a href="/ai_agent">AI Agent</a></li>
+            </ul>
+        </div>
+        <div class="nav-right">
+            <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
+            <div class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <span id="username">{{ username }}</span>
+                    <span>▼</span>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/settings">⚙️ Settings</a>
+                    <a href="/logout">🚪 Log Out</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1>Your Accounts</h1>
+            <button class="add-account-btn" onclick="addAccount()">+ Add Account</button>
+        </div>
+
+        <div class="accounts-grid">
+            {% if accounts %}
+            {% for account in accounts %}
+            <div class="account-card">
+                <div class="account-card-header">
+                    <div class="account-info">
+                        <div class="account-icon">{{ account.icon }}</div>
+                        <div class="account-name">{{ account.name }}</div>
+                        <div class="account-type">{{ account.type or 'Account' }}</div>
+                    </div>
+                    <div class="account-actions">
+                        <button class="action-btn edit-btn" onclick="editAccount('{{ account.id or loop.index }}')"
+                            title="Edit account">✏️</button>
+                        <button class="action-btn delete-btn" onclick="deleteAccount('{{ account.id or loop.index }}')"
+                            title="Delete account">🗑️</button>
+                    </div>
+                </div>
+                <div class="account-balance">{{ account.balance }}</div>
+                <div class="account-footer">
+                    <span>Last updated: {{ account.last_updated or 'Today' }}</span>
+                    <span>{{ account.transaction_count or '0' }} transactions</span>
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="no-accounts">
+                <div class="no-accounts-icon">💳</div>
+                <h3>No accounts yet</h3>
+                <p>Create your first account to start tracking your finances</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        document.addEventListener('click', function (event) {
+            const userMenu = document.querySelector('.user-menu');
+            if (!userMenu.contains(event.target)) {
+                document.getElementById('userDropdown').classList.remove('active');
+            }
+        });
+
+        function addRecord() {
+            // Redirect to add record page
+            console.log('Add record clicked');
+        }
+
+        function addAccount() {
+            // Redirect to add account page or open modal
+            console.log('Add account clicked');
+        }
+
+        function editAccount(accountId) {
+            // Redirect to edit account page
+            console.log('Edit account:', accountId);
+        }
+
+        function deleteAccount(accountId) {
+            // Confirm and delete account
+            console.log('Delete account:', accountId);
+        }
+
+        // Display username
+        document.getElementById('username').textContent = '{{ username }}';
+    </script>
+</body>
+
+</html>

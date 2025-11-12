@@ -122,7 +122,38 @@ def home():
 
 @app.route('/accounts')
 def accounts():
-    return render_template('accounts.html')
+
+    accounts_list = [
+        {
+            'id': '1',
+            'name': 'Checking Account',
+            'balance': '$2,340.00',
+            'icon': '💳',
+            'type': 'Checking',
+            'last_updated': 'Today',
+            'transaction_count': '24'
+        },
+        {
+            'id': '2',
+            'name': 'Savings Account',
+            'balance': '$3,080.00',
+            'icon': '💰',
+            'type': 'Savings',
+            'last_updated': 'Yesterday',
+            'transaction_count': '12'
+        },
+        {
+            'id': '3',
+            'name': 'Cash',
+            'balance': '$450.00',
+            'icon': '💵',
+            'type': 'Cash',
+            'last_updated': '2 days ago',
+            'transaction_count': '8'
+        }
+    ]
+
+    return render_template('accounts.html', username="current_user.username", accounts=accounts_list)
 
 @app.route('/records')
 def records():
