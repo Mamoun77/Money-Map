@@ -211,7 +211,6 @@ def accounts():
 @app.route('/records')
 # @login_required
 def records():
-    # Filter options - replace with actual database queries
     accounts_list = ['Checking Account', 'Savings Account', 'Cash', 'Investment Account']
     categories_list = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
     
@@ -225,8 +224,7 @@ def records():
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 def delete_record(record_id):
 
-    print(f"Record with ID {record_id} deleted.")  # Placeholder for actual deletion logic
-
+    print(f"Record with ID {record_id} deleted.")  
     return '', 204  # No Content returned, just that the deletion was successful
 
 @app.route('/update_record/<int:record_id>', methods=['POST'])

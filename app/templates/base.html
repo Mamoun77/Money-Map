@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Map - Home</title>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <div class="logo" onclick="window.location.href='/home'">Money Map</div>
+            <ul class="nav-menu">
+                <li><a href="/home" class="nav-home">Dashboard</a></li>
+                <li><a href="/accounts" class="nav-accounts">Accounts</a></li>
+                <li><a href="/records" class="nav-records">Records</a></li>
+                <li><a href="/ai_agent" class="nav-ai-agent">AI Agent</a></li>
+            </ul>
+
+        </div>
+        <div class="nav-right">
+            <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
+            <div class="user-menu">
+                <button class="user-btn" onclick="toggleUserMenu()">
+                    <span id="username">{{ username }}</span>
+                    <span>▼</span>
+                </button>
+                <div class="user-dropdown" id="userDropdown">
+                    <a href="/settings">⚙️ Settings</a>
+                    <a href="/logout">🚪 Log Out</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+</body>
+
+<script>
+    function toggleUserMenu() { // when pressing the username button
+        const dropdown = document.getElementById('userDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    // Close dropdown username menu when clicking outside
+    document.addEventListener('click', function (event) {
+        const userMenu = document.querySelector('.user-menu');
+        if (!userMenu.contains(event.target)) {
+            document.getElementById('userDropdown').classList.remove('active');
+        }
+    });
+
+    // the add record button
+    function addRecord() {
+        // Redirect to add record page or open modal
+    }
+
+
+
+    // Display username
+    document.getElementById('username').textContent = '{{ username }}';
+</script>
+{% block content %}{% endblock %}
+
+</html>

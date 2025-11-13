@@ -4,6 +4,11 @@
     box-sizing: border-box;
 }
 
+.nav-menu a.nav-ai-agent {
+    background: rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: radial-gradient(circle at center,

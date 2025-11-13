@@ -1,3 +1,8 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,31 +14,6 @@
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="nav-left">
-            <div class="logo" onclick="window.location.href='/home'">Money Map</div>
-            <ul class="nav-menu">
-                <li><a href="/home">Dashboard</a></li>
-                <li><a href="/accounts" class="active">Accounts</a></li>
-                <li><a href="/records">Records</a></li>
-                <li><a href="/ai_agent">AI Agent</a></li>
-            </ul>
-        </div>
-        <div class="nav-right">
-            <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
-            <div class="user-menu">
-                <button class="user-btn" onclick="toggleUserMenu()">
-                    <span id="username">{{ username }}</span>
-                    <span>▼</span>
-                </button>
-                <div class="user-dropdown" id="userDropdown">
-                    <a href="/settings">⚙️ Settings</a>
-                    <a href="/logout">🚪 Log Out</a>
-                </div>
-            </div>
-        </div>
-    </nav>
-
     <div class="main-content">
         <div class="page-header">
             <h1>Your Accounts</h1>
@@ -75,22 +55,7 @@
     </div>
 
     <script>
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('active');
-        }
-
-        document.addEventListener('click', function (event) {
-            const userMenu = document.querySelector('.user-menu');
-            if (!userMenu.contains(event.target)) {
-                document.getElementById('userDropdown').classList.remove('active');
-            }
-        });
-
-        function addRecord() {
-            // Redirect to add record page
-            console.log('Add record clicked');
-        }
+        const username = "{{ testusername }}";
 
         function addAccount() {
             // Redirect to add account page or open modal
@@ -106,10 +71,8 @@
             // Confirm and delete account
             console.log('Delete account:', accountId);
         }
-
-        // Display username
-        document.getElementById('username').textContent = '{{ username }}';
     </script>
 </body>
 
 </html>
+{% endblock %}

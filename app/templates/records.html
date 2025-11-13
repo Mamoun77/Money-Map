@@ -1,3 +1,8 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,30 +14,6 @@
 </head>
 
 <body>
-    <nav class="navbar">
-        <div class="nav-left">
-            <div class="logo" onclick="window.location.href='/home'">Money Map</div>
-            <ul class="nav-menu">
-                <li><a href="/home">Dashboard</a></li>
-                <li><a href="/accounts">Accounts</a></li>
-                <li><a href="/records" class="active">Records</a></li>
-                <li><a href="/ai_agent">AI Agent</a></li>
-            </ul>
-        </div>
-        <div class="nav-right">
-            <button class="add-record-btn" onclick="addRecord()">+ Add Record</button>
-            <div class="user-menu">
-                <button class="user-btn" onclick="toggleUserMenu()">
-                    <span id="username">{{ username }}</span>
-                    <span>▼</span>
-                </button>
-                <div class="user-dropdown" id="userDropdown">
-                    <a href="/settings">⚙️ Settings</a>
-                    <a href="/logout">🚪 Log Out</a>
-                </div>
-            </div>
-        </div>
-    </nav>
 
     <div class="main-container">
         <!-- Filter Sidebar -->
@@ -240,19 +221,6 @@
         // Store all records for filtering
         let allRecords = Array.from(document.querySelectorAll('.record-item'));
 
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userDropdown');
-            dropdown.classList.toggle('active');
-        }
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function (event) {
-            const userMenu = document.querySelector('.user-menu');
-            if (!userMenu.contains(event.target)) {
-                document.getElementById('userDropdown').classList.remove('active');
-            }
-        });
-
         function addRecord() {
 
         }
@@ -424,9 +392,6 @@
             document.getElementById('recordCount').textContent = filteredRecords.length;
         }
 
-        // Display username
-        document.getElementById('username').textContent = '{{ username }}';
-
         // Apply default filter (last 30 days) on page load
         document.addEventListener('DOMContentLoaded', function () {
             applyFilters();
@@ -435,3 +400,4 @@
 </body>
 
 </html>
+{% endblock %}
