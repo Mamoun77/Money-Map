@@ -7,6 +7,60 @@ import os
 
 load_dotenv('../credentials.env') #load environment variables (credentials and API keys) from a .env file
 
+
+records_test = [
+    {
+        'id': 1,
+        'description': 'Grocery Shopping',
+        'amount': '-$85.50',
+        'type': 'expense',
+        'category': 'Food & Dining',
+        'account': 'Checking Account',
+        'date': '2025-11-05',
+        'time': '14:30'
+    },
+    {
+        'id': 2,
+        'description': 'Salary Deposit',
+        'amount': '+$3,200.00',
+        'type': 'income',
+        'category': 'Salary',
+        'account': 'Checking Account',
+        'date': '2025-11-05',
+        'time': '09:00'
+    },
+    {
+        'id': 3,
+        'description': 'Coffee Shop',
+        'amount': '-$4.50',
+        'type': 'expense',
+        'category': 'Food & Dining',
+        'account': 'Cash',
+        'date': '2025-11-05',
+        'time': '08:15'
+    },
+    {
+        'id': 4,
+        'description': 'Electric Bill',
+        'amount': '-$120.00',
+        'type': 'expense',
+        'category': 'Utilities',
+        'account': 'Checking Account',
+        'date': '2025-11-05',
+        'time': '16:45'
+    },
+    {
+        'id': 5,
+        'description': 'Freelance Project',
+        'amount': '+$500.00',
+        'type': 'income',
+        'category': 'Freelance',
+        'account': 'Savings Account',
+        'date': '2025-11-03',
+        'time': '11:20'
+    }
+]
+
 app = Flask("Money-Map")
 
 app.secret_key = os.getenv('SECRET_KEY')  # Add SECRET_KEY to your .env file
@@ -157,60 +211,6 @@ def accounts():
 @app.route('/records')
 # @login_required
 def records():
-    # Test data - replace with actual database queries
-    records_test = [
-        {
-            'id': 1,
-            'description': 'Grocery Shopping',
-            'amount': '-$85.50',
-            'type': 'expense',
-            'category': 'Food & Dining',
-            'account': 'Checking Account',
-            'date': '2025-11-05',
-            'time': '14:30'
-        },
-        {
-            'id': 2,
-            'description': 'Salary Deposit',
-            'amount': '+$3,200.00',
-            'type': 'income',
-            'category': 'Salary',
-            'account': 'Checking Account',
-            'date': '2025-11-05',
-            'time': '09:00'
-        },
-        {
-            'id': 3,
-            'description': 'Coffee Shop',
-            'amount': '-$4.50',
-            'type': 'expense',
-            'category': 'Food & Dining',
-            'account': 'Cash',
-            'date': '2025-11-05',
-            'time': '08:15'
-        },
-        {
-            'id': 4,
-            'description': 'Electric Bill',
-            'amount': '-$120.00',
-            'type': 'expense',
-            'category': 'Utilities',
-            'account': 'Checking Account',
-            'date': '2025-11-05',
-            'time': '16:45'
-        },
-        {
-            'id': 5,
-            'description': 'Freelance Project',
-            'amount': '+$500.00',
-            'type': 'income',
-            'category': 'Freelance',
-            'account': 'Savings Account',
-            'date': '2025-11-03',
-            'time': '11:20'
-        }
-    ]
-    
     # Filter options - replace with actual database queries
     accounts_list = ['Checking Account', 'Savings Account', 'Cash', 'Investment Account']
     categories_list = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
@@ -229,6 +229,11 @@ def delete_record(record_id):
 
     return '', 204  # No Content returned, just that the deletion was successful
 
+@app.route('/update_record/<int:record_id>', methods=['POST'])
+def update_record(record_id):
+    data = request.get_json()
+    # Update record in database with data
+    return '', 204
 
 @app.route('/settings')
 def settings():
