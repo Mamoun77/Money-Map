@@ -6,7 +6,10 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: radial-grdadient(circle at center,
+            rgb(16, 109, 195, 0.4) 5%,
+            rgb(16, 165, 157) 40%,
+            rgb(16, 185, 129) 100%);
     min-height: 100vh;
     /* REMOVED: padding: 20px; */
 }
