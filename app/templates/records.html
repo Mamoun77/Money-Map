@@ -44,7 +44,7 @@
 
             <div class="filter-group">
                 <label for="searchBox">Search</label>
-                <input type="text" id="searchBox" placeholder="Search by description..." oninput="applyFilters()">
+                <input type="text" id="searchBox" placeholder="Search by name..." oninput="applyFilters()">
             </div>
 
             <div class="filter-group">
@@ -118,8 +118,9 @@
             <div class="records-list" id="recordsList">
                 {% if records %}
                 {% for record in records %}
-                <div class="record-item" data-type="{{ record.type }}" data-category="{{ record.category }}"
-                    data-account="{{ record.account }}" data-date="{{ record.date }}" data-amount="{{ record.amount }}">
+                <div class="record-item" id="record-{{ record.id }}" data-type="{{ record.type }}"
+                    data-category="{{ record.category }}" data-account="{{ record.account }}"
+                    data-date="{{ record.date }}" data-amount="{{ record.amount }}">
                     <div class="record-main">
                         <div class="record-icon">
                             {% if record.type == 'income' %}
@@ -192,8 +193,16 @@
         }
 
         function deleteRecord(recordId) {
-            // Delete record functionality - to be implemented
-            console.log('Delete record:', recordId);
+            fetch(`/delete_record/${recordId}`, {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (response.ok) {  // Only delete if status is 200-299 (successful)
+                        document.getElementById(`record-${recordId}`).remove();
+                    } else {
+                        alert('Failed to delete the record.');
+                    }
+                })
         }
 
         function resetFilters() {

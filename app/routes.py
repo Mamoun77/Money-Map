@@ -166,7 +166,7 @@ def records():
             'type': 'expense',
             'category': 'Food & Dining',
             'account': 'Checking Account',
-            'date': '2025-01-15',
+            'date': '2025-11-05',
             'time': '14:30'
         },
         {
@@ -176,7 +176,7 @@ def records():
             'type': 'income',
             'category': 'Salary',
             'account': 'Checking Account',
-            'date': '2024-01-15',
+            'date': '2025-11-05',
             'time': '09:00'
         },
         {
@@ -186,7 +186,7 @@ def records():
             'type': 'expense',
             'category': 'Food & Dining',
             'account': 'Cash',
-            'date': '2024-01-14',
+            'date': '2025-11-05',
             'time': '08:15'
         },
         {
@@ -196,7 +196,7 @@ def records():
             'type': 'expense',
             'category': 'Utilities',
             'account': 'Checking Account',
-            'date': '2024-01-13',
+            'date': '2025-11-05',
             'time': '16:45'
         },
         {
@@ -206,7 +206,7 @@ def records():
             'type': 'income',
             'category': 'Freelance',
             'account': 'Savings Account',
-            'date': '2024-01-12',
+            'date': '2025-11-03',
             'time': '11:20'
         }
     ]
@@ -221,9 +221,20 @@ def records():
                          accounts=accounts_list,
                          categories=categories_list)
 
+
+@app.route('/delete_record/<int:record_id>', methods=['POST'])
+def delete_record(record_id):
+
+    print(f"Record with ID {record_id} deleted.")  # Placeholder for actual deletion logic
+
+    return '', 204  # No Content returned, just that the deletion was successful
+
+
 @app.route('/settings')
 def settings():
     return render_template('settings.html')
+
+
 
 # @app.route('/test')
 # def test():
