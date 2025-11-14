@@ -9,6 +9,7 @@ load_dotenv('../credentials.env') #load environment variables (credentials and A
 
 
 records_test = [
+
     {
         'id': 1,
         'description': 'Grocery Shopping',
@@ -60,6 +61,38 @@ records_test = [
         'time': '11:20'
     }
 ]
+
+accounts_test = [
+        {
+            'id': '1',
+            'name': 'Checking Account',
+            'balance': '$2,340.00',
+            'icon': '💳',
+            'type': 'Checking',
+            'last_updated': 'Today',
+            'transaction_count': '24'
+        },
+        {
+            'id': '2',
+            'name': 'Savings Account',
+            'balance': '$3,080.00',
+            'icon': '💰',
+            'type': 'Savings',
+            'last_updated': 'Yesterday',
+            'transaction_count': '12'
+        },
+        {
+            'id': '3',
+            'name': 'Cash',
+            'balance': '$450.00',
+            'icon': '💵',
+            'type': 'Cash',
+            'last_updated': '2 days ago',
+            'transaction_count': '8'
+        }
+    ]
+
+categories_test = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
 
 app = Flask("Money-Map")
 
@@ -155,70 +188,42 @@ def ai_agent():
         query = request.form.get('query')
         response = invoke_agent(query)
         return jsonify({'response': response})
-    return render_template('ai_agent.html', username="current_user.username") # if the method is GET
+    return render_template('ai_agent.html',
+                         username="current_user.username",
+                         records=records_test,
+                         accounts=accounts_test,
+                         categories=categories_test)
 
 @app.route('/home')
 # @login_required
 def home():
 
-    accounts_test = [
-        {'name': 'Checking test Account', 'balance': '$2,340.00', 'icon': '💳'},
-        {'name': 'Savings Account', 'balance': '$3,080.00', 'icon': '💰'},
-        {'name': 'Cash', 'balance': '$450.00', 'icon': '💵'},
-        {'name': 'Investment Account', 'balance': '$1,550.00', 'icon': '🏦'}
-    ]
-    # return render_template('home.html', current_user.username)
-    return render_template('home.html', 
+    return render_template('home.html',
                          username="current_user.username",
+                         records=records_test,
                          accounts=accounts_test,
+                         categories=categories_test,
                          total_balance='$3,600.00')
 
 @app.route('/accounts')
 def accounts():
 
-    accounts_list = [
-        {
-            'id': '1',
-            'name': 'Checking Account',
-            'balance': '$2,340.00',
-            'icon': '💳',
-            'type': 'Checking',
-            'last_updated': 'Today',
-            'transaction_count': '24'
-        },
-        {
-            'id': '2',
-            'name': 'Savings Account',
-            'balance': '$3,080.00',
-            'icon': '💰',
-            'type': 'Savings',
-            'last_updated': 'Yesterday',
-            'transaction_count': '12'
-        },
-        {
-            'id': '3',
-            'name': 'Cash',
-            'balance': '$450.00',
-            'icon': '💵',
-            'type': 'Cash',
-            'last_updated': '2 days ago',
-            'transaction_count': '8'
-        }
-    ]
-
-    return render_template('accounts.html', username="current_user.username", accounts=accounts_list)
+    
+    return render_template('accounts.html',
+                         username="current_user.username",
+                         records=records_test,
+                         accounts=accounts_test,
+                         categories=categories_test)
 
 @app.route('/records')
 # @login_required
 def records():
-    accounts_list = ['Checking Account', 'Savings Account', 'Cash', 'Investment Account']
-    categories_list = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
     
     return render_template('records.html',
                          username="current_user.username",
                          records=records_test,
-                         accounts=accounts_list,
-                         categories=categories_list)
+                         accounts=accounts_test,
+                         categories=categories_test)
 
 
 @app.route('/add_record', methods=['POST'])

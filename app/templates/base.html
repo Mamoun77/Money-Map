@@ -78,7 +78,7 @@
                             <label for="addAccount">Account</label>
                             <select id="addAccount" required>
                                 {% for account in accounts %}
-                                <option value="{{ account }}">{{ account }}</option>
+                                <option value="{{ account }}">{{ account.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
