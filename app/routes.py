@@ -13,7 +13,7 @@ records_test = [
     {
         'id': 1,
         'description': 'Grocery Shopping',
-        'amount': '-$85.50',
+        'amount': '85.50',
         'type': 'expense',
         'category': 'Food & Dining',
         'account': 'Checking Account',
@@ -23,7 +23,7 @@ records_test = [
     {
         'id': 2,
         'description': 'Salary Deposit',
-        'amount': '+$3,200.00',
+        'amount': '3200.00',
         'type': 'income',
         'category': 'Salary',
         'account': 'Checking Account',
@@ -33,7 +33,7 @@ records_test = [
     {
         'id': 3,
         'description': 'Coffee Shop',
-        'amount': '-$4.50',
+        'amount': '4.50',
         'type': 'expense',
         'category': 'Food & Dining',
         'account': 'Cash',
@@ -43,7 +43,7 @@ records_test = [
     {
         'id': 4,
         'description': 'Electric Bill',
-        'amount': '-$120.00',
+        'amount': '120.00',
         'type': 'expense',
         'category': 'Utilities',
         'account': 'Checking Account',
@@ -53,7 +53,7 @@ records_test = [
     {
         'id': 5,
         'description': 'Freelance Project',
-        'amount': '+$500.00',
+        'amount': '500.00',
         'type': 'income',
         'category': 'Freelance',
         'account': 'Savings Account',
@@ -66,7 +66,7 @@ accounts_test = [
         {
             'id': '1',
             'name': 'Checking Account',
-            'balance': '$2,340.00',
+            'balance': '2340.00',
             'icon': '💳',
             'type': 'Checking',
             'last_updated': 'Today',
@@ -75,7 +75,7 @@ accounts_test = [
         {
             'id': '2',
             'name': 'Savings Account',
-            'balance': '$3,080.00',
+            'balance': '3080.00',
             'icon': '💰',
             'type': 'Savings',
             'last_updated': 'Yesterday',
@@ -84,7 +84,7 @@ accounts_test = [
         {
             'id': '3',
             'name': 'Cash',
-            'balance': '$450.00',
+            'balance': '450.00',
             'icon': '💵',
             'type': 'Cash',
             'last_updated': '2 days ago',
@@ -203,17 +203,36 @@ def home():
                          records=records_test,
                          accounts=accounts_test,
                          categories=categories_test,
-                         total_balance='$3,600.00')
+                         total_balance='3600.00')
 
 @app.route('/accounts')
 def accounts():
-
     
     return render_template('accounts.html',
                          username="current_user.username",
                          records=records_test,
                          accounts=accounts_test,
                          categories=categories_test)
+
+@app.route('/add_account', methods=['POST'])
+def add_account():
+    data = request.get_json()
+    print("New account data received:", data)  
+    return '', 204  # No Content returned, just that the addition was successful
+
+@app.route('/delete_account/<int:account_id>', methods=['POST'])
+def delete_account(account_id):
+
+    print(f"Account with ID {account_id} deleted.")  
+    return '', 204  # No Content returned, just that the deletion was successful
+
+@app.route('/edit_account/<int:account_id>', methods=['POST'])
+def edit_account(account_id):
+    data = request.get_json()
+    print(f"Account with ID {account_id} updated")  
+    return '', 204
+
+
 
 @app.route('/records')
 # @login_required
@@ -243,6 +262,8 @@ def update_record(record_id):
     data = request.get_json()
     # Update record in database with data
     return '', 204
+
+
 
 @app.route('/settings')
 def settings():
