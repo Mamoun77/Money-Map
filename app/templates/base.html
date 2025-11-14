@@ -34,10 +34,82 @@
             </div>
         </div>
     </nav>
+
+    <!-- Add Record Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="edit-modal">
+            <div class="modal-header">
+                <h2>Add New Record</h2>
+                <button class="close-btn" onclick="closeAddModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addForm">
+                    <div class="form-group">
+                        <label for="addDescription">Description</label>
+                        <textarea id="addDescription" required></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="addType">Type</label>
+                            <select id="addType" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="addAmount">Amount</label>
+                            <input type="number" id="addAmount" step="0.01" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="addCategory">Category</label>
+                            <select id="addCategory" required>
+                                {% for category in categories %}
+                                <option value="{{ category }}">{{ category }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="addAccount">Account</label>
+                            <select id="addAccount" required>
+                                {% for account in accounts %}
+                                <option value="{{ account }}">{{ account }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="addDate">Date</label>
+                            <input type="date" id="addDate" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="addTime">Time</label>
+                            <input type="time" id="addTime" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                <button class="btn-save" onclick="saveNewRecord()">Add Record</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 <script>
     const username = "{{ username }}";
+    const category = "{{ category }}";
+    const account = "{{ account }}";
+
 </script>
 <script src="{{ url_for('static', filename='js/base.js') }}"></script>
 {% block content %}{% endblock %}

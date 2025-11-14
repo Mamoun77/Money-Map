@@ -221,6 +221,12 @@ def records():
                          categories=categories_list)
 
 
+@app.route('/add_record', methods=['POST'])
+def add_record():
+    data = request.get_json()
+    print("New record data received:", data)  
+    return '', 204  # No Content returned, just that the addition was successful
+
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 def delete_record(record_id):
 

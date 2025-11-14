@@ -9,13 +9,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f5f5;
-    min-height: 100vh;
-}
-
-
 /* Main Container Layout */
 .main-container {
     display: flex;
