@@ -25,7 +25,7 @@
 
             <div class="filter-group">
                 <label for="searchBox">Search</label>
-                <input type="text" id="searchBox" placeholder="Search by name..." oninput="applyFilters()">
+                <input type="text" id="searchBox" placeholder="Search by Description..." oninput="applyFilters()">
             </div>
 
             <div class="filter-group">
@@ -191,7 +191,7 @@
                             <label for="editAccount">Account</label>
                             <select id="editAccount" required>
                                 {% for account in accounts %}
-                                <option value="{{ account }}">{{ account }}</option>
+                                <option value="{{ account.name }}">{{ account.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
