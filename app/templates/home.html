@@ -18,7 +18,7 @@
     <div class="main-content">
         <div class="total-balance">
             <h2>Total Balance</h2>
-            <div class="amount">{{ total_balance }}</div>
+            <div class="amount" data-raw-balance="{{ total_balance }}"></div>
         </div>
 
         <div class="accounts-section">
@@ -28,7 +28,7 @@
                 {% for account in accounts %}
                 <div class="account-item">
                     <div class="account-name">{{ account.icon }} {{ account.name }}</div>
-                    <div class="account-balance">{{ account.balance }}</div>
+                    <div class="account-balance" data-raw-balance="{{ account.balance }}"></div>
                 </div>
                 {% endfor %}
                 {% else %}
@@ -39,6 +39,27 @@
     </div>
 
     <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Format total balance
+            const totalBalanceEl = document.querySelector('.amount');
+            if (totalBalanceEl) {
+                const rawTotal = parseFloat(totalBalanceEl.dataset.rawBalance);
+                totalBalanceEl.textContent = formatCurrency(rawTotal);
+            }
+
+            // Format all account balances
+            document.querySelectorAll('.account-balance').forEach(el => {
+                const rawBalance = parseFloat(el.dataset.rawBalance);
+                el.textContent = formatCurrency(rawBalance);
+            });
+        });
     </script>
 </body>
 

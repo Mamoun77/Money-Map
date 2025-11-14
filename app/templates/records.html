@@ -121,9 +121,8 @@
                         </div>
                     </div>
                     <div class="record-right">
-                        <div
-                            class="record-amount {% if record.type == 'income' %}amount-income{% else %}amount-expense{% endif %}">
-                            {{ record.amount }}
+                        <div class="record-amount {% if record.type == 'income' %}amount-income{% else %}amount-expense{% endif %}"
+                            data-raw-amount="{{ record.amount }}">
                         </div>
                         <div class="record-actions">
                             <button class="action-btn edit-btn" onclick="editRecord({{ record.id }})" title="Edit">
@@ -218,6 +217,14 @@
     </div>
 
     <script>
+        // Currency formatter
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
+        }
+
         // Store all records for filtering
         let allRecords = Array.from(document.querySelectorAll('.record-item'));
 
@@ -228,8 +235,8 @@
             document.getElementById('editRecordId').value = recordId;
             document.getElementById('editDescription').value = recordElement.querySelector('.record-description').textContent;
             document.getElementById('editType').value = recordElement.dataset.type;
-            const amountText = recordElement.querySelector('.record-amount').textContent.trim();
-            document.getElementById('editAmount').value = Math.abs(parseFloat(amountText.replace(/[^0-9.-]/g, ''))); // for extracting the numeric value from the ammount
+            const amountText = recordElement.querySelector('.record-amount').dataset.rawAmount;
+            document.getElementById('editAmount').value = Math.abs(parseFloat(amountText));
             document.getElementById('editCategory').value = recordElement.dataset.category;
             document.getElementById('editAccount').value = recordElement.dataset.account;
             document.getElementById('editDate').value = recordElement.dataset.date;
@@ -268,7 +275,7 @@
                 .then(response => {
                     if (response.ok) {
                         closeEditModal();
-                        location.reload(); // Reload to show updated record
+                        location.reload();
                     } else {
                         alert('Failed to update the record.');
                     }
@@ -287,8 +294,10 @@
                 method: 'POST'
             })
                 .then(response => {
-                    if (response.ok) {  // Only delete if status is 200-299 (successful)
+                    if (response.ok) {
                         document.getElementById(`record-${recordId}`).remove();
+                        allRecords = allRecords.filter(r => r.id !== `record-${recordId}`);
+                        applyFilters();
                     } else {
                         alert('Failed to delete the record.');
                     }
@@ -326,14 +335,13 @@
 
             // Calculate date range
             const today = new Date();
-            let startDate = new Date('1900-01-01'); // Default to very old date for "all time"
+            let startDate = new Date('1900-01-01');
 
             if (dateRange !== 'all' && dateRange !== 'custom') {
                 startDate = new Date(today);
                 startDate.setDate(today.getDate() - parseInt(dateRange));
             } else if (dateRange === 'custom') {
                 const customStart = document.getElementById('startDate').value;
-                const customEnd = document.getElementById('endDate').value;
                 if (customStart) startDate = new Date(customStart);
             }
 
@@ -362,12 +370,12 @@
                 } else if (sortBy === 'date-asc') {
                     return new Date(a.dataset.date) - new Date(b.dataset.date);
                 } else if (sortBy === 'amount-desc') {
-                    const amountA = parseFloat(a.dataset.amount.replace(/[^0-9.-]/g, ''));
-                    const amountB = parseFloat(b.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    const amountA = parseFloat(a.dataset.amount);
+                    const amountB = parseFloat(b.dataset.amount);
                     return Math.abs(amountB) - Math.abs(amountA);
                 } else if (sortBy === 'amount-asc') {
-                    const amountA = parseFloat(a.dataset.amount.replace(/[^0-9.-]/g, ''));
-                    const amountB = parseFloat(b.dataset.amount.replace(/[^0-9.-]/g, ''));
+                    const amountA = parseFloat(a.dataset.amount);
+                    const amountB = parseFloat(b.dataset.amount);
                     return Math.abs(amountA) - Math.abs(amountB);
                 }
             });
@@ -388,8 +396,14 @@
             document.getElementById('recordCount').textContent = filteredRecords.length;
         }
 
-        // Apply default filter (last 30 days) on page load
+        // Format currency on page load
         document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.record-amount').forEach(el => {
+                const rawAmount = parseFloat(el.dataset.rawAmount);
+                const isIncome = el.classList.contains('amount-income');
+                el.textContent = (isIncome ? '+' : '-') + formatCurrency(Math.abs(rawAmount));
+            });
+
             applyFilters();
         });
     </script>
