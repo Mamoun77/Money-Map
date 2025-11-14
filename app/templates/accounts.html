@@ -23,7 +23,8 @@
         <div class="accounts-grid">
             {% if accounts %}
             {% for account in accounts %}
-            <div class="account-card">
+            <div class="account-card" data-id="{{ account.id or loop.index }}" data-name="{{ account.name }}"
+                data-type="{{ account.type }}" data-balance="{{ account.balance }}" data-icon="{{ account.icon }}">
                 <div class="account-card-header">
                     <div class="account-info">
                         <div class="account-icon">{{ account.icon }}</div>
@@ -37,7 +38,7 @@
                             title="Delete account">🗑️</button>
                     </div>
                 </div>
-                <div class="account-balance">{{ account.balance }}</div>
+                <div class="account-balance" data-raw-balance="{{ account.balance }}"></div>
                 <div class="account-footer">
                     <span>Last updated: {{ account.last_updated or 'Today' }}</span>
                     <span>{{ account.transaction_count or '0' }} transactions</span>
@@ -54,23 +55,233 @@
         </div>
     </div>
 
-    <script>
-        const username = "{{ testusername }}";
+    <!-- Add Account Modal -->
+    <div class="modal-overlay" id="addAccountModal">
+        <div class="edit-modal">
+            <div class="modal-header">
+                <h2>Add New Account</h2>
+                <button class="close-btn" onclick="closeAddAccountModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="addAccountForm">
+                    <div class="form-group">
+                        <label for="accountName">Account Name</label>
+                        <input type="text" id="accountName" placeholder="e.g., Main Checking" required>
+                    </div>
 
-        function addAccount() {
-            // Redirect to add account page or open modal
-            console.log('Add account clicked');
+                    <div class="form-group">
+                        <label for="accountType">Account Type</label>
+                        <input type="text" id="accountType" placeholder="e.g., Checking, Savings" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="accountBalance">Initial Amount</label>
+                        <input type="number" id="accountBalance" step="0.01" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <input type="hidden" id="accountIcon">
+                        <div class="icon-grid">
+                            {% for icon in ['💳','🏦','💰','💵','💶','💷','🪙','💸','🏧','💎'] %}
+                            <div class="icon-item" onclick="selectIcon('{{ icon }}')">{{ icon }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeAddAccountModal()">Cancel</button>
+                    <button class="btn-save" onclick="saveNewAccount()">Add Account</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Account Modal -->
+    <div class="modal-overlay" id="editAccountModal">
+        <div class="edit-modal">
+            <div class="modal-header">
+                <h2>Edit Account</h2>
+                <button class="close-btn" onclick="closeEditAccountModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editAccountForm">
+                    <input type="hidden" id="editAccountId">
+                    <div class="form-group">
+                        <label for="editAccountName">Account Name</label>
+                        <input type="text" id="editAccountName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAccountType">Account Type</label>
+                        <input type="text" id="editAccountType" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAccountBalance">Balance</label>
+                        <input type="number" id="editAccountBalance" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon</label>
+                        <input type="hidden" id="editAccountIcon">
+                        <div class="icon-grid">
+                            {% for icon in ['💳','🏦','💰','💵','💶','💷','🪙','💸','🏧','💎'] %}
+                            <div class="icon-item" onclick="selectEditIcon('{{ icon }}')">{{ icon }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeEditAccountModal()">Cancel</button>
+                    <button class="btn-save" onclick="saveEditAccount()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD'
+            }).format(amount);
         }
 
         function editAccount(accountId) {
-            // Redirect to edit account page
-            console.log('Edit account:', accountId);
+            const card = document.querySelector(`[data-id="${accountId}"]`);
+            document.getElementById('editAccountId').value = accountId;
+            document.getElementById('editAccountName').value = card.dataset.name;
+            document.getElementById('editAccountType').value = card.dataset.type;
+            document.getElementById('editAccountBalance').value = card.dataset.balance;
+            document.getElementById('editAccountIcon').value = card.dataset.icon;
+
+            document.querySelectorAll('#editAccountModal .icon-item').forEach(el => {
+                el.classList.remove('selected');
+                if (el.textContent === card.dataset.icon) {
+                    el.classList.add('selected');
+                }
+            });
+
+            document.getElementById('editAccountModal').classList.add('active');
+        }
+
+        function closeEditAccountModal() {
+            document.getElementById('editAccountModal').classList.remove('active');
+        }
+
+        function saveEditAccount() {
+            const id = document.getElementById('editAccountId').value;
+            const name = document.getElementById('editAccountName').value.trim();
+            const type = document.getElementById('editAccountType').value.trim();
+            const balance = document.getElementById('editAccountBalance').value;
+            const icon = document.getElementById('editAccountIcon').value;
+
+            if (!name || !type || !balance || !icon) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            fetch(`/edit_account/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, type, balance: parseFloat(balance), icon })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        closeEditAccountModal();
+                        location.reload();
+                    } else {
+                        alert('Failed to update the account.');
+                    }
+                });
+        }
+
+        function selectEditIcon(icon) {
+            document.getElementById('editAccountIcon').value = icon;
+            document.querySelectorAll('#editAccountModal .icon-item').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
         }
 
         function deleteAccount(accountId) {
-            // Confirm and delete account
-            console.log('Delete account:', accountId);
+            if (!confirm('Are you sure you want to delete this account?')) {
+                return;
+            }
+
+            fetch(`/delete_account/${accountId}`, {
+                method: 'DELETE'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to delete the account.');
+                    }
+                });
         }
+
+        function addAccount() {
+            document.getElementById('accountName').value = '';
+            document.getElementById('accountType').value = '';
+            document.getElementById('accountBalance').value = '';
+            document.getElementById('accountIcon').value = '';
+            document.querySelectorAll('#addAccountModal .icon-item').forEach(el => el.classList.remove('selected'));
+            document.getElementById('addAccountModal').classList.add('active');
+        }
+
+        function closeAddAccountModal() {
+            document.getElementById('addAccountModal').classList.remove('active');
+        }
+
+        function saveNewAccount() {
+            const name = document.getElementById('accountName').value.trim();
+            const icon = document.getElementById('accountIcon').value;
+            const type = document.getElementById('accountType').value.trim();
+            const balance = document.getElementById('accountBalance').value;
+
+            if (!name || !type || !balance || !icon) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            fetch('/add_account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name, icon, type,
+                    balance: parseFloat(balance),
+                    transaction_count: 0
+                })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        closeAddAccountModal();
+                        location.reload();
+                    } else {
+                        alert('Failed to add the account.');
+                    }
+                });
+        }
+
+        document.getElementById('addAccountModal').addEventListener('click', function (e) {
+            if (e.target === this) closeAddAccountModal();
+        });
+
+        document.getElementById('editAccountModal').addEventListener('click', function (e) {
+            if (e.target === this) closeEditAccountModal();
+        });
+
+        function selectIcon(icon) {
+            document.getElementById('accountIcon').value = icon;
+            document.querySelectorAll('#addAccountModal .icon-item').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+        }
+
+        // Format all balances on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.account-balance').forEach(el => {
+                const rawBalance = parseFloat(el.dataset.rawBalance);
+                el.textContent = formatCurrency(rawBalance);
+            });
+        });
     </script>
 </body>
 
