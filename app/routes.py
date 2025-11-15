@@ -399,8 +399,24 @@ def update_record(record_id):
 
 @app.route('/settings')
 def settings():
-    return render_template('settings.html')
+    currency = 'USD'
+    language = 'en'
+    notifications = True
+    
+    return render_template('settings.html',
+                         currency=currency,
+                         language=language,
+                         notifications=notifications)
 
+@app.route('/save_settings', methods=['POST'])
+def save_settings():
+    currency = request.form.get('currency', 'USD')
+    language = request.form.get('language', 'en')
+    notifications = request.form.get('notifications') == 'on'
+    
+    print(f"Settings saved: Currency={currency}, Language={language}, Notifications={notifications}")
+    
+    return '', 204
 
 
 # @app.route('/test')

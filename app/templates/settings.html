@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Map - Settings</title>
+</head>
+
+<body>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>Settings</h1>
+            <p>Manage your preferences and account settings</p>
+        </div>
+
+        <form id="settingsForm" method="POST" action="{{ url_for('save_settings') }}">
+            <div class="settings-section">
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-icon">💱</div>
+                        <div class="setting-details">
+                            <h3>Currency</h3>
+                            <p>Choose your preferred currency for displaying amounts</p>
+                        </div>
+                    </div>
+                    <select name="currency" id="currency" class="setting-select">
+                        <option value="USD" {% if currency=='USD' %}selected{% endif %}>USD - US Dollar</option>
+                        <option value="JOD" {% if currency=='JOD' %}selected{% endif %}>JOD - Jordanian Dinar</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-icon">🌐</div>
+                        <div class="setting-details">
+                            <h3>Language</h3>
+                            <p>Select your preferred language</p>
+                        </div>
+                    </div>
+                    <select name="language" id="language" class="setting-select">
+                        <option value="en" {% if language=='en' %}selected{% endif %}>English</option>
+                    </select>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <div class="setting-icon">🔔</div>
+                        <div class="setting-details">
+                            <h3>Notifications</h3>
+                            <p>Enable or disable notifications</p>
+                        </div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" name="notifications" id="notifications" {% if notifications %}checked{%
+                            endif %}>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-actions">
+                <button type="submit" class="btn-save">Save Changes</button>
+                <button type="button" class="btn-cancel"
+                    onclick="window.location.href='{{ url_for('home') }}'">Cancel</button>
+            </div>
+        </form>
+
+        <div id="successMessage" class="success-message">
+            Settings saved successfully!
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.getElementById('settingsForm');
+            const successMessage = document.getElementById('successMessage');
+
+            form.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const formData = new FormData(form);
+
+                // Convert checkbox to proper value
+                const notificationsCheckbox = document.getElementById('notifications');
+                formData.set('notifications', notificationsCheckbox.checked ? 'on' : 'off');
+
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            // Show success message
+                            successMessage.classList.add('show');
+
+                            // Hide after 3 seconds
+                            setTimeout(() => {
+                                successMessage.classList.remove('show');
+                            }, 3000);
+
+                            // Reload page after 1.5 seconds to apply changes
+                            setTimeout(() => {
+                                window.location.href = '/home';
+                            }, 500);
+                        } else {
+                            alert('Error saving settings. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error saving settings. Please try again.');
+                    });
+            });
+
+            // Add smooth transitions to toggle switch
+            const toggleInput = document.getElementById('notifications');
+            toggleInput.addEventListener('change', function () {
+                this.parentElement.classList.add('toggle-active');
+                setTimeout(() => {
+                    this.parentElement.classList.remove('toggle-active');
+                }, 300);
+            });
+        });
+    </script>
+</body>
+
+</html>
+{% endblock %}
