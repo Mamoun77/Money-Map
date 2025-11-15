@@ -17,10 +17,25 @@
 
         <form id="registerForm" method="POST">
             <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+
+            <div class="form-group">
                 <label for="username">Username</label>
                 <input type="text" id="username" name="username" placeholder="Choose a username" required>
                 <div class="error-message" id="usernameError"></div>
                 <div class="success-message" id="usernameSuccess"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="first_name">First Name</label>
+                <input type="text" id="first_name" name="first_name" required>
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name</label>
+                <input type="text" id="last_name" name="last_name" required>
             </div>
 
             <div class="form-group">
@@ -36,6 +51,9 @@
                     required>
                 <div class="error-message" id="confirmPasswordError"></div>
             </div>
+
+
+
 
             <button type="submit" class="btn">Register</button>
         </form>

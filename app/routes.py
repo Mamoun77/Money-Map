@@ -2,6 +2,7 @@ from ai_integrations.conversational_ai_agent import invoke_agent
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
 
@@ -196,19 +197,51 @@ categories_test = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transpo
 app = Flask("Money-Map")
 
 app.secret_key = os.getenv('SECRET_KEY')  # Add SECRET_KEY to your .env file
-app.config['SQLALCHEMY_DATABASE_URI'] = (f"""mysql+pymysql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}""")
+app.config['SQLALCHEMY_DATABASE_URI'] = (f"""mysql+pymysql://{os.getenv('MYSQL_USERNAME')}:{os.getenv('MYSQL_PASSWORD')}@{os.getenv('MYSQL_HOST')}/{os.getenv('DATABASE_NAME')}""")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+class User(UserMixin, db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+
+class Account(db.Model):
+    __tablename__ = 'accounts'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    icon = db.Column(db.String(10))
+    balance = db.Column(db.Numeric(10, 2), default=0.00)
+
+class Expense(db.Model):
+    __tablename__ = 'expenses'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
+    amount = db.Column(db.Numeric(10, 2), nullable=False)
+    category = db.Column(db.String(50))
+    type = db.Column(db.Enum('expense', 'income'), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time, nullable=False)
+    description = db.Column(db.Text)
+
+class UserSettings(db.Model):
+    __tablename__ = 'user_settings'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    currency = db.Column(db.String(10), default='USD')
+    language = db.Column(db.String(10), default='en')
+    theme = db.Column(db.String(20), default='light')
+    notification_enabled = db.Column(db.Boolean, default=True)
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # type: ignore # for redirect to login if not logged in
-
-class User(UserMixin, db.Model):
-    __tablename__ = 'users' # specifys the table name in the original database
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -224,25 +257,21 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        user = User.query.filter_by(username=username, password=password).first() # filtering the user by username and password from the database
+        user = User.query.filter_by(username=username).first()
         
-        # if the user is found and the password is correct
-        if user:
+        if user and check_password_hash(user.password, password):
             login_user(user)
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home')) # redirect to the desired page or the home page
+            return redirect(next_page) if next_page else redirect(url_for('home'))
         
-        # Check if username exists
-        user_exists = User.query.filter_by(username=username).first()
-        if not user_exists:
+        if not user:
             flash('Account not found. Please register first.', 'warning')
             return redirect(url_for('register'))
         
-        # if the user exists but the password is incorrect
         flash('Invalid username or password', 'danger')
         return render_template('login.html')
     
-    return render_template('login.html') # if the mothod is GET, render the login page
+    return render_template('login.html')
 
 # The register route
 @app.route('/register', methods=['GET', 'POST'])
@@ -252,14 +281,28 @@ def register():
     
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
+        first_name = request.form.get('first_name')
+        last_name = request.form.get('last_name')
         
         if User.query.filter_by(username=username).first():
             flash('Username already exists', 'danger')
             return render_template('register.html')
         
-        user = User(username=username, password=password)
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists', 'danger')
+            return render_template('register.html')
+        
+        hashed_password = generate_password_hash(password)
+        user = User(username=username, email=email, password=hashed_password, 
+                   first_name=first_name, last_name=last_name)
         db.session.add(user)
+        db.session.commit()
+        
+        # Create default settings for user
+        settings = UserSettings(user_id=user.id)
+        db.session.add(settings)
         db.session.commit()
         
         flash('Registration successful! Please login.', 'success')
@@ -277,11 +320,12 @@ def logout():
 
 # The home route
 @app.route('/')
-# @login_required
+@login_required
 def other():
     return redirect(url_for('home'))
 
 @app.route('/ai_agent', methods=['GET', 'POST'])
+@login_required
 def ai_agent():
     if request.method == 'POST':
         query = request.form.get('query')
@@ -294,6 +338,7 @@ def ai_agent():
                          categories=categories_test)
 
 @app.route('/home')
+@login_required
 def home():
     from collections import defaultdict
     
@@ -338,6 +383,7 @@ def home():
                          savings_rate='56',
                          chart_data=chart_data)
 @app.route('/accounts')
+@login_required
 def accounts():
     
     return render_template('accounts.html',
@@ -347,18 +393,21 @@ def accounts():
                          categories=categories_test)
 
 @app.route('/add_account', methods=['POST'])
+@login_required
 def add_account():
     data = request.get_json()
     print("New account data received:", data)  
     return '', 204  # No Content returned, just that the addition was successful
 
 @app.route('/delete_account/<int:account_id>', methods=['POST'])
+@login_required
 def delete_account(account_id):
 
     print(f"Account with ID {account_id} deleted.")  
     return '', 204  # No Content returned, just that the deletion was successful
 
 @app.route('/edit_account/<int:account_id>', methods=['POST'])
+@login_required
 def edit_account(account_id):
     data = request.get_json()
     print(f"Account with ID {account_id} updated")  
@@ -367,7 +416,7 @@ def edit_account(account_id):
 
 
 @app.route('/records')
-# @login_required
+@login_required
 def records():
     
     return render_template('records.html',
@@ -378,18 +427,21 @@ def records():
 
 
 @app.route('/add_record', methods=['POST'])
+@login_required
 def add_record():
     data = request.get_json()
     print("New record data received:", data)  
     return '', 204  # No Content returned, just that the addition was successful
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
+@login_required
 def delete_record(record_id):
 
     print(f"Record with ID {record_id} deleted.")  
     return '', 204  # No Content returned, just that the deletion was successful
 
 @app.route('/update_record/<int:record_id>', methods=['POST'])
+@login_required
 def update_record(record_id):
     data = request.get_json()
     # Update record in database with data
@@ -398,6 +450,7 @@ def update_record(record_id):
 
 
 @app.route('/settings')
+@login_required
 def settings():
     currency = 'USD'
     language = 'en'
@@ -413,6 +466,7 @@ def settings():
                          categories=categories_test)
 
 @app.route('/save_settings', methods=['POST'])
+@login_required
 def save_settings():
     currency = request.form.get('currency', 'USD')
     language = request.form.get('language', 'en')
