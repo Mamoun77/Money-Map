@@ -9,7 +9,6 @@ load_dotenv('../credentials.env') #load environment variables (credentials and A
 
 
 records_test = [
-
     {
         'id': 1,
         'description': 'Grocery Shopping',
@@ -27,7 +26,7 @@ records_test = [
         'type': 'income',
         'category': 'Salary',
         'account': 'Checking Account',
-        'date': '2025-11-05',
+        'date': '2025-11-01',
         'time': '09:00'
     },
     {
@@ -47,7 +46,7 @@ records_test = [
         'type': 'expense',
         'category': 'Utilities',
         'account': 'Checking Account',
-        'date': '2025-11-05',
+        'date': '2025-11-03',
         'time': '16:45'
     },
     {
@@ -57,8 +56,108 @@ records_test = [
         'type': 'income',
         'category': 'Freelance',
         'account': 'Savings Account',
-        'date': '2025-11-03',
+        'date': '2025-10-28',
         'time': '11:20'
+    },
+    {
+        'id': 6,
+        'description': 'Uber Ride',
+        'amount': '25.75',
+        'type': 'expense',
+        'category': 'Transportation',
+        'account': 'Checking Account',
+        'date': '2025-11-07',
+        'time': '18:30'
+    },
+    {
+        'id': 7,
+        'description': 'Netflix Subscription',
+        'amount': '15.99',
+        'type': 'expense',
+        'category': 'Entertainment',
+        'account': 'Checking Account',
+        'date': '2025-11-01',
+        'time': '10:00'
+    },
+    {
+        'id': 8,
+        'description': 'Online Shopping',
+        'amount': '67.20',
+        'type': 'expense',
+        'category': 'Shopping',
+        'account': 'Credit Card',
+        'date': '2025-11-06',
+        'time': '20:15'
+    },
+    {
+        'id': 9,
+        'description': 'Restaurant Dinner',
+        'amount': '45.00',
+        'type': 'expense',
+        'category': 'Food & Dining',
+        'account': 'Credit Card',
+        'date': '2025-11-08',
+        'time': '19:45'
+    },
+    {
+        'id': 10,
+        'description': 'Gas Station',
+        'amount': '55.00',
+        'type': 'expense',
+        'category': 'Transportation',
+        'account': 'Checking Account',
+        'date': '2025-11-04',
+        'time': '07:30'
+    },
+    {
+        'id': 11,
+        'description': 'Salary Deposit',
+        'amount': '3200.00',
+        'type': 'income',
+        'category': 'Salary',
+        'account': 'Checking Account',
+        'date': '2025-10-01',
+        'time': '09:00'
+    },
+    {
+        'id': 12,
+        'description': 'Internet Bill',
+        'amount': '89.99',
+        'type': 'expense',
+        'category': 'Utilities',
+        'account': 'Checking Account',
+        'date': '2025-10-15',
+        'time': '12:00'
+    },
+    {
+        'id': 13,
+        'description': 'Movie Tickets',
+        'amount': '32.00',
+        'type': 'expense',
+        'category': 'Entertainment',
+        'account': 'Cash',
+        'date': '2025-10-20',
+        'time': '18:00'
+    },
+    {
+        'id': 14,
+        'description': 'Freelance Consulting',
+        'amount': '750.00',
+        'type': 'income',
+        'category': 'Freelance',
+        'account': 'Savings Account',
+        'date': '2025-11-10',
+        'time': '14:00'
+    },
+    {
+        'id': 15,
+        'description': 'Clothing Store',
+        'amount': '120.00',
+        'type': 'expense',
+        'category': 'Shopping',
+        'account': 'Credit Card',
+        'date': '2025-10-25',
+        'time': '15:30'
     }
 ]
 
@@ -195,16 +294,49 @@ def ai_agent():
                          categories=categories_test)
 
 @app.route('/home')
-# @login_required
 def home():
-
+    from collections import defaultdict
+    
+    # Calculate monthly averages
+    monthly_data = defaultdict(lambda: {'income': 0, 'spending': 0})
+    category_totals = defaultdict(float)
+    
+    for record in records_test:
+        month = record['date'][:7]
+        amount = float(record['amount'])
+        
+        if record['type'] == 'income':
+            monthly_data[month]['income'] += amount
+        else:
+            monthly_data[month]['spending'] += amount
+            category_totals[record['category']] += amount
+    
+    avg_spending = sum(m['spending'] for m in monthly_data.values()) / len(monthly_data) if monthly_data else 0
+    avg_income = sum(m['income'] for m in monthly_data.values()) / len(monthly_data) if monthly_data else 0
+    
+    # Sort months chronologically
+    sorted_months = sorted(monthly_data.keys())
+    
+    # Prepare chart data - use all categories from categories_test
+    chart_data = {
+        'category_labels': [cat for cat in categories_test if category_totals.get(cat, 0) > 0 or cat in [r['category'] for r in records_test]],
+        'category_values': [category_totals.get(cat, 0) for cat in categories_test if category_totals.get(cat, 0) > 0 or cat in [r['category'] for r in records_test]],
+        'trend_labels': [month[-2:] for month in sorted_months[-6:]],  # Last 6 months
+        'trend_income': [monthly_data[m]['income'] for m in sorted_months[-6:]],
+        'trend_spending': [monthly_data[m]['spending'] for m in sorted_months[-6:]]
+    }
+    
     return render_template('home.html',
                          username="current_user.username",
                          records=records_test,
                          accounts=accounts_test,
                          categories=categories_test,
-                         total_balance='3600.00')
-
+                         total_balance='3600.00',
+                         avg_spending=f'{avg_spending:.2f}',
+                         avg_income=f'{avg_income:.2f}',
+                         top_category=max(category_totals, key=category_totals.get) if category_totals else 'N/A',
+                         savings_rate='56',
+                         chart_data=chart_data)
 @app.route('/accounts')
 def accounts():
     

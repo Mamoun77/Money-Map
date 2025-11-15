@@ -38,6 +38,48 @@
         </div>
     </div>
 
+    <div class="charts-container">
+        <div class="chart-card">
+            <h3>Spending by Category</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>Income vs Spending Trend</h3>
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="analytics-section">
+        <h2>Analytics</h2>
+        <div class="analytics-grid">
+            <div class="analytics-card">
+                <div class="analytics-icon">📊</div>
+                <div class="analytics-title">Avg Monthly Spending</div>
+                <div class="analytics-value" id="monthly-spending">$0.00</div>
+            </div>
+            <div class="analytics-card">
+                <div class="analytics-icon">💰</div>
+                <div class="analytics-title">Avg Monthly Income</div>
+                <div class="analytics-value" id="monthly-income">$0.00</div>
+            </div>
+            <div class="analytics-card">
+                <div class="analytics-icon">📈</div>
+                <div class="analytics-title">Top Category</div>
+                <div class="analytics-value" id="top-category">N/A</div>
+                <div class="analytics-change">this month</div>
+            </div>
+            <div class="analytics-card">
+                <div class="analytics-icon">🎯</div>
+                <div class="analytics-title">Savings Rate</div>
+                <div class="analytics-value" id="savings-rate">0%</div>
+                <div class="analytics-change">of income</div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
     <script>
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
@@ -59,6 +101,81 @@
                 const rawBalance = parseFloat(el.dataset.rawBalance);
                 el.textContent = formatCurrency(rawBalance);
             });
+        });
+
+        // Format analytics values
+        const avgSpending = parseFloat('{{ avg_spending }}' || 0);
+        const avgIncome = parseFloat('{{ avg_income }}' || 0);
+        const topCategory = '{{ top_category }}' || 'N/A';
+        const savingsRate = ((avgIncome - avgSpending) / avgIncome * 100).toFixed(0);
+
+        document.getElementById('monthly-spending').textContent = formatCurrency(avgSpending);
+        document.getElementById('monthly-income').textContent = formatCurrency(avgIncome);
+        document.getElementById('top-category').textContent = topCategory;
+        document.getElementById('savings-rate').textContent = savingsRate + '%';
+
+        // Get chart data from Flask
+        const chartData = {{ chart_data | tojson }};
+
+        // Category Chart
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.category_labels,
+                datasets: [{
+                    data: chartData.category_values,
+                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.label || '';
+                                const value = formatCurrency(context.parsed);
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Trend Chart
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: chartData.trend_labels,
+                datasets: [{
+                    label: 'Income',
+                    data: chartData.trend_income,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true
+                }, {
+                    label: 'Spending',
+                    data: chartData.trend_spending,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
         });
     </script>
 </body>
