@@ -406,7 +406,11 @@ def settings():
     return render_template('settings.html',
                          currency=currency,
                          language=language,
-                         notifications=notifications)
+                         notifications=notifications,
+                         username="current_user.username",
+                         records=records_test,
+                         accounts=accounts_test,
+                         categories=categories_test)
 
 @app.route('/save_settings', methods=['POST'])
 def save_settings():
@@ -415,7 +419,6 @@ def save_settings():
     notifications = request.form.get('notifications') == 'on'
     
     print(f"Settings saved: Currency={currency}, Language={language}, Notifications={notifications}")
-    
     return '', 204
 
 
