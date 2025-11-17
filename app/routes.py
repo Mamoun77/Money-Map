@@ -254,10 +254,10 @@ def login():
         return redirect(url_for('home'))
     
     if request.method == 'POST': 
-        username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter_by(email=email).first()
         
         if user and check_password_hash(user.password, password):
             login_user(user)
@@ -271,7 +271,7 @@ def login():
         flash('Invalid username or password', 'danger')
         return render_template('login.html')
     
-    return render_template('login.html')
+    return render_template('login.html') # Render login template if the method is GET
 
 # The register route
 @app.route('/register', methods=['GET', 'POST'])
@@ -308,7 +308,7 @@ def register():
         flash('Registration successful! Please login.', 'success')
         return redirect(url_for('login'))
     
-    return render_template('register.html')
+    return render_template('register.html') # Render register template if the method is GET
 
 # The logout route
 @app.route('/logout')
