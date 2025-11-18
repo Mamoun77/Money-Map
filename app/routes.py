@@ -211,7 +211,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
 
-class Account(db.Model):
+class Accounts(db.Model):
     __tablename__ = 'accounts'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -219,13 +219,20 @@ class Account(db.Model):
     icon = db.Column(db.String(10))
     balance = db.Column(db.Numeric(10, 2), default=0.00)
 
-class Expense(db.Model):
+class Categories(db.Model):
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False)
+    type = db.Column(db.Enum('expense', 'income', 'both'), default='both')
+
+class Expenses(db.Model):
     __tablename__ = 'expenses'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     account_id = db.Column(db.Integer, db.ForeignKey('accounts.id'), nullable=False)
     amount = db.Column(db.Numeric(10, 2), nullable=False)
-    category = db.Column(db.String(50))
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))    
     type = db.Column(db.Enum('expense', 'income'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     time = db.Column(db.Time, nullable=False)
@@ -258,18 +265,18 @@ def login():
         password = request.form.get('password')
         
         user = User.query.filter_by(email=email).first()
-        
-        if user and check_password_hash(user.password, password):
-            login_user(user)
-            next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('home'))
-        
+
         if not user:
             flash('Account not found. Please register first.', 'warning')
             return redirect(url_for('register'))
-        
-        flash('Invalid username or password', 'danger')
-        return render_template('login.html')
+
+        if not check_password_hash(user.password, password):
+            flash('Invalid username or password', 'danger')
+            return render_template('login.html')
+
+        login_user(user)
+        next_page = request.args.get('next')
+        return redirect(next_page) if next_page else redirect(url_for('home'))
     
     return render_template('login.html') # Render login template if the method is GET
 
@@ -331,11 +338,15 @@ def ai_agent():
         query = request.form.get('query')
         response = invoke_agent(query)
         return jsonify({'response': response})
-    return render_template('ai_agent.html',
-                         username="current_user.username",
-                         records=records_test,
-                         accounts=accounts_test,
-                         categories=categories_test)
+    
+    else:  # Else if the method is GET
+
+
+        return render_template('ai_agent.html',
+                                username=current_user.username,
+                                records=records_test,
+                                accounts=accounts_test,
+                                categories=categories_test)
 
 @app.route('/home')
 @login_required
@@ -418,12 +429,34 @@ def edit_account(account_id):
 @app.route('/records')
 @login_required
 def records():
+    records = db.session.query(Expenses, Accounts, Categories)\
+        .join(Accounts, Expenses.account_id == Accounts.id)\
+        .join(Categories, Expenses.category_id == Categories.id)\
+        .filter(Expenses.user_id == current_user.id)\
+        .all()
+    
+    accounts = Accounts.query.filter_by(user_id=current_user.id).all()
+    categories = Categories.query.filter_by(user_id=current_user.id).all()
+    
+    # Transform the joined query results into a usable format
+    records_list = []
+    for expense, account, category in records:
+        records_list.append({
+            'id': expense.id,
+            'description': expense.description,
+            'amount': expense.amount,
+            'type': expense.type,
+            'date': expense.date,
+            'time': expense.time,
+            'category': category.name,
+            'account': account.name
+        })
     
     return render_template('records.html',
-                         username="current_user.username",
-                         records=records_test,
-                         accounts=accounts_test,
-                         categories=categories_test)
+                         username=current_user.username,
+                         records=records_list,
+                         accounts=accounts,
+                         categories=categories)
 
 
 @app.route('/add_record', methods=['POST'])

@@ -72,7 +72,7 @@
                 <select id="filterCategory" onchange="applyFilters()">
                     <option value="">All Categories</option>
                     {% for category in categories %}
-                    <option value="{{ category }}">{{ category }}</option>
+                    <option value="{{ category.name }}">{{ category.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -181,7 +181,7 @@
                             <label for="editCategory">Category</label>
                             <select id="editCategory" required>
                                 {% for category in categories %}
-                                <option value="{{ category }}">{{ category }}</option>
+                                <option value="{{ category.name }}">{{ category.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
