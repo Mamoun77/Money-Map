@@ -377,20 +377,34 @@ def ai_agent():
 @login_required
 def home():
     from collections import defaultdict
+    from sqlalchemy import func
+    
+    # Fetch user's records from DB
+    records_query = db.session.query(
+        Records,
+        Categories.name.label('category_name'),
+        Accounts.name.label('account_name')
+    ).join(
+        Categories, Records.category_id == Categories.id
+    ).join(
+        Accounts, Records.account_id == Accounts.id
+    ).filter(
+        Records.user_id == current_user.id
+    ).all()
     
     # Calculate monthly averages
     monthly_data = defaultdict(lambda: {'income': 0, 'spending': 0})
     category_totals = defaultdict(float)
     
-    for record in records_test:
-        month = record['date'][:7]
-        amount = float(record['amount'])
+    for record, category_name, account_name in records_query:
+        month = record.date.strftime('%Y-%m')
+        amount = float(record.amount)
         
-        if record['type'] == 'income':
+        if record.type == 'income':
             monthly_data[month]['income'] += amount
         else:
             monthly_data[month]['spending'] += amount
-            category_totals[record['category']] += amount
+            category_totals[category_name] += amount
     
     avg_spending = sum(m['spending'] for m in monthly_data.values()) / len(monthly_data) if monthly_data else 0
     avg_income = sum(m['income'] for m in monthly_data.values()) / len(monthly_data) if monthly_data else 0
@@ -398,26 +412,42 @@ def home():
     # Sort months chronologically
     sorted_months = sorted(monthly_data.keys())
     
-    # Prepare chart data - use all categories from categories_test
+    # Get user's categories
+    user_categories = Categories.query.filter_by(user_id=current_user.id).all()
+    category_names = [cat.name for cat in user_categories]
+    
+    # Prepare chart data
     chart_data = {
-        'category_labels': [cat for cat in categories_test if category_totals.get(cat, 0) > 0 or cat in [r['category'] for r in records_test]],
-        'category_values': [category_totals.get(cat, 0) for cat in categories_test if category_totals.get(cat, 0) > 0 or cat in [r['category'] for r in records_test]],
-        'trend_labels': [month[-2:] for month in sorted_months[-6:]],  # Last 6 months
-        'trend_income': [monthly_data[m]['income'] for m in sorted_months[-6:]],
-        'trend_spending': [monthly_data[m]['spending'] for m in sorted_months[-6:]]
+        'category_labels': [cat for cat in category_names if category_totals.get(cat, 0) > 0],
+        'category_values': [category_totals.get(cat, 0) for cat in category_names if category_totals.get(cat, 0) > 0],
+        'trend_labels': [month[-2:] for month in sorted_months[-6:]] if len(sorted_months) >= 6 else [month[-2:] for month in sorted_months],
+        'trend_income': [monthly_data[m]['income'] for m in sorted_months[-6:]] if len(sorted_months) >= 6 else [monthly_data[m]['income'] for m in sorted_months],
+        'trend_spending': [monthly_data[m]['spending'] for m in sorted_months[-6:]] if len(sorted_months) >= 6 else [monthly_data[m]['spending'] for m in sorted_months]
     }
     
+    # Calculate total balance
+    total_balance = db.session.query(func.sum(Accounts.balance)).filter_by(user_id=current_user.id).scalar() or 0
+    
+    # Calculate savings rate
+    total_income = sum(m['income'] for m in monthly_data.values())
+    total_spending = sum(m['spending'] for m in monthly_data.values())
+    savings_rate = int(((total_income - total_spending) / total_income * 100)) if total_income > 0 else 0
+    
+    records_list, accounts, categories = rendering_records_accounts_categories()
+    
     return render_template('home.html',
-                         username="current_user.username",
-                         records=records_test,
-                         accounts=accounts_test,
-                         categories=categories_test,
-                         total_balance='3600.00',
+                         username=current_user.username,
+                         records=records_list,
+                         accounts=accounts,
+                         categories=categories,
+                         total_balance=f'{float(total_balance):.2f}',
                          avg_spending=f'{avg_spending:.2f}',
                          avg_income=f'{avg_income:.2f}',
                          top_category=max(category_totals, key=category_totals.get) if category_totals else 'N/A',
-                         savings_rate='56',
+                         savings_rate=str(savings_rate),
                          chart_data=chart_data)
+
+
 @app.route('/accounts')
 @login_required
 def accounts():
