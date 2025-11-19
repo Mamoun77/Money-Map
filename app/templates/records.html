@@ -99,9 +99,9 @@
             <div class="records-list" id="recordsList">
                 {% if records %}
                 {% for record in records %}
-                <div class="record-item" id="record-{{ record.id }}" data-type="{{ record.type }}"
-                    data-category="{{ record.category }}" data-account="{{ record.account }}"
-                    data-date="{{ record.date }}" data-amount="{{ record.amount }}">
+                <div class="record-item" id="record-{{ record.id }}" data-time="{{ record.time }}"
+                    data-type="{{ record.type }}" data-category="{{ record.category }}"
+                    data-account="{{ record.account }}" data-date="{{ record.date }}" data-amount="{{ record.amount }}">
                     <div class="record-main">
                         <div class="record-icon">
                             {% if record.type == 'income' %}
@@ -114,7 +114,7 @@
                             <div class="record-description">{{ record.description }}</div>
                             <div class="record-meta">
                                 <span class="meta-item">📅 {{ record.date }}</span>
-                                <span class="meta-item">🕒 {{ record.time }}</span>
+                                <span class="meta-item">🕒 {{ record.time.strftime('%I:%M %p') }}</span>
                                 <span class="meta-item">🏷️ {{ record.category }}</span>
                                 <span class="meta-item">💳 {{ record.account }}</span>
                             </div>
@@ -242,9 +242,7 @@
             document.getElementById('editDate').value = recordElement.dataset.date;
 
             // Extract time from meta items
-            const timeElement = recordElement.querySelector('.meta-item:nth-child(2)');
-            const timeText = timeElement.textContent.replace('🕒 ', '');
-            document.getElementById('editTime').value = timeText;
+            document.getElementById('editTime').value = recordElement.dataset.time;
 
             document.getElementById('editModal').classList.add('active');
         }
@@ -365,18 +363,21 @@
 
             // Sort records
             filteredRecords.sort((a, b) => {
+                // Helper to get full date object
+                const getDate = (el) => new Date(`${el.dataset.date}T${el.dataset.time}`);
+
                 if (sortBy === 'date-desc') {
-                    return new Date(b.dataset.date) - new Date(a.dataset.date);
+                    const diff = getDate(b) - getDate(a);
+                    // If time is identical, sort by ID (Newest ID first)
+                    return diff === 0 ? parseInt(b.id.split('-')[1]) - parseInt(a.id.split('-')[1]) : diff;
                 } else if (sortBy === 'date-asc') {
-                    return new Date(a.dataset.date) - new Date(b.dataset.date);
-                } else if (sortBy === 'amount-desc') {
-                    const amountA = parseFloat(a.dataset.amount);
-                    const amountB = parseFloat(b.dataset.amount);
-                    return Math.abs(amountB) - Math.abs(amountA);
-                } else if (sortBy === 'amount-asc') {
-                    const amountA = parseFloat(a.dataset.amount);
-                    const amountB = parseFloat(b.dataset.amount);
-                    return Math.abs(amountA) - Math.abs(amountB);
+                    const diff = getDate(a) - getDate(b);
+                    // If time is identical, sort by ID (Oldest ID first)
+                    return diff === 0 ? parseInt(a.id.split('-')[1]) - parseInt(b.id.split('-')[1]) : diff;
+                }
+                // ... keep amount sorting logic as is ...
+                else if (sortBy === 'amount-desc') {
+                    // ... existing code ...
                 }
             });
 
