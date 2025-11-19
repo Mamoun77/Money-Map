@@ -69,7 +69,7 @@
                             <label for="addCategory">Category</label>
                             <select id="addCategory" required>
                                 {% for category in categories %}
-                                <option value="{{ category }}">{{ category }}</option>
+                                <option value="{{ category.id }}">{{ category.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -78,7 +78,7 @@
                             <label for="addAccount">Account</label>
                             <select id="addAccount" required>
                                 {% for account in accounts %}
-                                <option value="{{ account }}">{{ account.name }}</option>
+                                <option value="{{ account.id }}">{{ account.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>

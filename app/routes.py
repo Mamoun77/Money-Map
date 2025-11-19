@@ -226,7 +226,7 @@ class Categories(db.Model):
     name = db.Column(db.String(50), nullable=False)
     type = db.Column(db.Enum('expense', 'income', 'both'), default='both')
 
-class Expenses(db.Model):
+class Records(db.Model):
     __tablename__ = 'expenses'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -246,6 +246,31 @@ class UserSettings(db.Model):
     language = db.Column(db.String(10), default='en')
     theme = db.Column(db.String(20), default='light')
     notification_enabled = db.Column(db.Boolean, default=True)
+
+def rendering_records_accounts_categories(): # For fetching records, accounts, and categories from the database for the current user
+    records = db.session.query(Records, Accounts, Categories)\
+        .join(Accounts, Records.account_id == Accounts.id)\
+        .join(Categories, Records.category_id == Categories.id)\
+        .filter(Records.user_id == current_user.id)\
+        .all()
+    
+    accounts = Accounts.query.filter_by(user_id=current_user.id).all()
+    categories = Categories.query.filter_by(user_id=current_user.id).all()
+    
+    # Transform the joined query results into a usable format
+    records_list = []
+    for expense, account, category in records:
+        records_list.append({
+            'id': expense.id,
+            'description': expense.description,
+            'amount': expense.amount,
+            'type': expense.type,
+            'date': expense.date,
+            'time': expense.time,
+            'category': category.name,
+            'account': account.name
+        })
+    return records_list, accounts, categories
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # type: ignore # for redirect to login if not logged in
@@ -429,28 +454,8 @@ def edit_account(account_id):
 @app.route('/records')
 @login_required
 def records():
-    records = db.session.query(Expenses, Accounts, Categories)\
-        .join(Accounts, Expenses.account_id == Accounts.id)\
-        .join(Categories, Expenses.category_id == Categories.id)\
-        .filter(Expenses.user_id == current_user.id)\
-        .all()
-    
-    accounts = Accounts.query.filter_by(user_id=current_user.id).all()
-    categories = Categories.query.filter_by(user_id=current_user.id).all()
-    
-    # Transform the joined query results into a usable format
-    records_list = []
-    for expense, account, category in records:
-        records_list.append({
-            'id': expense.id,
-            'description': expense.description,
-            'amount': expense.amount,
-            'type': expense.type,
-            'date': expense.date,
-            'time': expense.time,
-            'category': category.name,
-            'account': account.name
-        })
+
+    records_list, accounts, categories = rendering_records_accounts_categories()
     
     return render_template('records.html',
                          username=current_user.username,
@@ -463,7 +468,28 @@ def records():
 @login_required
 def add_record():
     data = request.get_json()
-    print("New record data received:", data)  
+
+    # print("*" * 100)
+    # print(int(data.get('account')))
+    # print("type:", type(int(data.get('account'))))
+    # print("*" * 100)
+
+    new_record = Records(
+        user_id=current_user.id,
+        account_id=int(data.get('account')),
+        amount=data.get('amount'),
+        category_id=int(data.get('category')),
+        type=data.get('type'),
+        date=data.get('date'),
+        time=data.get('time'),
+        description=data.get('description')
+    )
+
+    db.session.add(new_record)
+    db.session.commit()
+
+
+
     return '', 204  # No Content returned, just that the addition was successful
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
@@ -477,6 +503,19 @@ def delete_record(record_id):
 @login_required
 def update_record(record_id):
     data = request.get_json()
+
+    record = Records.query.get(data.get('id'))
+
+    record.account_id = data.get('account')
+    record.amount = data.get('amount')
+    record.category_id = data.get('category')
+    record.type = data.get('type')
+    record.date = data.get('date')
+    record.time = data.get('time')
+    record.description = data.get('description')
+    
+    db.session.commit()
+
     # Update record in database with data
     return '', 204
 
