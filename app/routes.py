@@ -469,10 +469,10 @@ def records():
 def add_record():
     data = request.get_json()
 
-    # print("*" * 100)
-    # print(int(data.get('account')))
-    # print("type:", type(int(data.get('account'))))
-    # print("*" * 100)
+    print("*" * 100)
+    print(int(data.get('account')))
+    print("type:", type(int(data.get('account'))))
+    print("*" * 100)
 
     new_record = Records(
         user_id=current_user.id,
@@ -496,7 +496,10 @@ def add_record():
 @login_required
 def delete_record(record_id):
 
-    print(f"Record with ID {record_id} deleted.")  
+    record = Records.query.get(record_id) # Retrieve the record by ID
+    db.session.delete(record)
+    db.session.commit()
+
     return '', 204  # No Content returned, just that the deletion was successful
 
 @app.route('/update_record/<int:record_id>', methods=['POST'])
