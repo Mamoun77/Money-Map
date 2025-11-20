@@ -24,12 +24,11 @@
             {% if accounts %}
             {% for account in accounts %}
             <div class="account-card" data-id="{{ account.id or loop.index }}" data-name="{{ account.name }}"
-                data-type="{{ account.type }}" data-balance="{{ account.balance }}" data-icon="{{ account.icon }}">
+                data-balance="{{ account.balance }}" data-icon="{{ account.icon }}">
                 <div class="account-card-header">
                     <div class="account-info">
                         <div class="account-icon">{{ account.icon }}</div>
                         <div class="account-name">{{ account.name }}</div>
-                        <div class="account-type">{{ account.type or 'Account' }}</div>
                     </div>
                     <div class="account-actions">
                         <button class="action-btn edit-btn" onclick="editAccount('{{ account.id or loop.index }}')"
@@ -40,7 +39,6 @@
                 </div>
                 <div class="account-balance" data-raw-balance="{{ account.balance }}"></div>
                 <div class="account-footer">
-                    <span>Last updated: {{ account.last_updated or 'Today' }}</span>
                     <span>{{ account.transaction_count or '0' }} transactions</span>
                 </div>
             </div>
@@ -69,10 +67,6 @@
                         <input type="text" id="accountName" placeholder="e.g., Main Checking" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="accountType">Account Type</label>
-                        <input type="text" id="accountType" placeholder="e.g., Checking, Savings" required>
-                    </div>
 
                     <div class="form-group">
                         <label for="accountBalance">Initial Amount</label>
@@ -92,7 +86,7 @@
 
                 <div class="modal-actions">
                     <button class="btn-cancel" onclick="closeAddAccountModal()">Cancel</button>
-                    <button class="btn-save" onclick="saveNewAccount()">Add Account</button> Account</button>
+                    <button class="btn-save" onclick="saveNewAccount()">Add Account</button>
                 </div>
             </div>
         </div>
@@ -111,10 +105,6 @@
                     <div class="form-group">
                         <label for="editAccountName">Account Name</label>
                         <input type="text" id="editAccountName" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="editAccountType">Account Type</label>
-                        <input type="text" id="editAccountType" required>
                     </div>
                     <div class="form-group">
                         <label for="editAccountBalance">Balance</label>
@@ -150,7 +140,6 @@
             const card = document.querySelector(`[data-id="${accountId}"]`);
             document.getElementById('editAccountId').value = accountId;
             document.getElementById('editAccountName').value = card.dataset.name;
-            document.getElementById('editAccountType').value = card.dataset.type;
             document.getElementById('editAccountBalance').value = card.dataset.balance;
             document.getElementById('editAccountIcon').value = card.dataset.icon;
 
@@ -171,11 +160,10 @@
         function saveEditAccount() {
             const id = document.getElementById('editAccountId').value;
             const name = document.getElementById('editAccountName').value.trim();
-            const type = document.getElementById('editAccountType').value.trim();
             const balance = document.getElementById('editAccountBalance').value;
             const icon = document.getElementById('editAccountIcon').value;
 
-            if (!name || !type || !balance || !icon) {
+            if (!name || !balance || !icon) {
                 alert('Please fill in all required fields.');
                 return;
             }
@@ -183,7 +171,7 @@
             fetch(`/edit_account/${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, type, balance: parseFloat(balance), icon })
+                body: JSON.stringify({ name, balance: parseFloat(balance), icon })
             })
                 .then(response => {
                     if (response.ok) {
@@ -252,7 +240,6 @@
         }
         function addAccount() {
             document.getElementById('accountName').value = '';
-            document.getElementById('accountType').value = '';
             document.getElementById('accountBalance').value = '';
             document.getElementById('accountIcon').value = '';
             document.querySelectorAll('#addAccountModal .icon-item').forEach(el => el.classList.remove('selected'));
@@ -266,10 +253,9 @@
         function saveNewAccount(accountId) {
             const name = document.getElementById('accountName').value.trim();
             const icon = document.getElementById('accountIcon').value;
-            const type = document.getElementById('accountType').value.trim();
             const balance = document.getElementById('accountBalance').value;
 
-            if (!name || !type || !balance || !icon) {
+            if (!name || !balance || !icon) {
                 alert('Please fill in all required fields.');
                 return;
             }
@@ -278,7 +264,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    name, icon, type,
+                    name, icon,
                     balance: parseFloat(balance),
                     transaction_count: 0
                 })
