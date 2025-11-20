@@ -451,32 +451,53 @@ def home():
 @app.route('/accounts')
 @login_required
 def accounts():
+
+    records_list, accounts, categories = rendering_records_accounts_categories()
+
     
     return render_template('accounts.html',
-                         username="current_user.username",
-                         records=records_test,
-                         accounts=accounts_test,
-                         categories=categories_test)
+                         username=current_user.username,
+                         records=records_list,
+                         accounts=accounts,
+                         categories=categories)
 
 @app.route('/add_account', methods=['POST'])
 @login_required
 def add_account():
     data = request.get_json()
-    print("New account data received:", data)  
+    new_account = Accounts(
+        user_id=current_user.id,
+        name=data.get('name'),
+        icon=data.get('icon'),
+        balance=data.get('balance', 0.00)
+    )
+    db.session.add(new_account)
+    db.session.commit()
     return '', 204  # No Content returned, just that the addition was successful
 
 @app.route('/delete_account/<int:account_id>', methods=['POST'])
 @login_required
 def delete_account(account_id):
 
-    print(f"Account with ID {account_id} deleted.")  
+    account = Accounts.query.get(account_id)
+    db.session.delete(account) # Delete the account from the DB
+    db.session.commit()
+
     return '', 204  # No Content returned, just that the deletion was successful
 
 @app.route('/edit_account/<int:account_id>', methods=['POST'])
 @login_required
 def edit_account(account_id):
     data = request.get_json()
-    print(f"Account with ID {account_id} updated")  
+
+    account = Accounts.query.get(account_id)
+
+    account.name = data.get('name')
+    account.balance = data.get('balance')
+    account.icon = data.get('icon')
+
+    db.session.commit()
+
     return '', 204
 
 
