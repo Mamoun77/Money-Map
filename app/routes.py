@@ -224,8 +224,6 @@ class Categories(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
-    type = db.Column(db.Enum('expense', 'income', 'both'), default='both')
-
 class Records(db.Model):
     __tablename__ = 'expenses'
     id = db.Column(db.Integer, primary_key=True)
@@ -600,6 +598,11 @@ def save_settings():
     
     print(f"Settings saved: Currency={currency}, Language={language}, Notifications={notifications}")
     return '', 204
+
+@app.route('/settings/categories', methods=['GET'])
+@login_required
+def get_categories():
+
 
 
 # @app.route('/test')
