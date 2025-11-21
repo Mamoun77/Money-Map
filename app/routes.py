@@ -518,11 +518,6 @@ def records():
 def add_record():
     data = request.get_json()
 
-    print("*" * 100)
-    print(int(data.get('account')))
-    print("type:", type(int(data.get('account'))))
-    print("*" * 100)
-
     new_record = Records(
         user_id=current_user.id,
         account_id=int(data.get('account')),
@@ -566,9 +561,8 @@ def update_record(record_id):
     record.time = data.get('time')
     record.description = data.get('description')
     
-    db.session.commit()
-
-    # Update record in database with data
+    db.session.commit() # Update record in database with data
+    
     return '', 204
 
 
@@ -579,15 +573,18 @@ def settings():
     currency = 'USD'
     language = 'en'
     notifications = True
+
+    records_list, accounts, categories = rendering_records_accounts_categories()
+
     
     return render_template('settings.html',
                          currency=currency,
                          language=language,
                          notifications=notifications,
-                         username="current_user.username",
-                         records=records_test,
-                         accounts=accounts_test,
-                         categories=categories_test)
+                         username=current_user.username,
+                         records=records_list,
+                         accounts=accounts,
+                         categories=categories)
 
 @app.route('/save_settings', methods=['POST'])
 @login_required
@@ -603,13 +600,49 @@ def save_settings():
 @login_required
 def get_categories():
 
+    categories = Categories.query.filter_by(user_id=current_user.id).all()
+    categories_list = [{'id': cat.id, 'name': cat.name} for cat in categories]
+    return jsonify(categories_list)
 
+@app.route('/settings/add_category', methods=['POST'])
+@login_required
+def add_category():
+    data = request.get_json()
+    new_category = Categories(
+        user_id=current_user.id,
+        name=data.get('name')
+    )
+
+    db.session.add(new_category)
+    db.session.commit()
+    return '', 204  # No Content returned, just that the addition was successful
+
+@app.route('/settings/delete_category/<int:category_id>', methods=['POST'])
+@login_required
+def delete_category(category_id):
+
+    categorie = Categories.query.get(category_id)
+    db.session.delete(categorie) # Delete the category from the DB
+    db.session.commit()
+    return '', 204
+
+@app.route('/settings/edit_category/<int:category_id>', methods=['POST'])
+@login_required
+def edit_category(category_id):
+    data = request.get_json()
+
+    categorie = Categories.query.get(category_id)
+    
+    categorie.name = data.get('name') # Update category name in database with data
+    
+    db.session.commit()
+
+    return '', 204
 
 # @app.route('/test')
 # def test():
-#     flash('Registration successful! Please login.', 'success')
+#   flash('Registration successful! Please login.', 'success')
 #     return ""
-
 
 
 app.run(debug=True)

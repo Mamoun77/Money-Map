@@ -119,10 +119,10 @@
             <span class="modal-close">&times;</span>
             <h2 id="modalTitle">Add Category</h2>
             <form id="categoryForm">
-                <input type="hidden" id="categoryId" name="id">
+                <input type="hidden" id="categoryId">
                 <div class="form-group">
                     <label for="categoryName">Category Name</label>
-                    <input type="text" id="categoryName" name="name" required maxlength="50">
+                    <input type="text" id="categoryName" required maxlength="50">
                 </div>
                 <div class="modal-actions">
                     <button type="submit" class="btn-save">Save</button>
@@ -133,15 +133,14 @@
     </div>
 
     <script>
-        // General Settings Form
         document.addEventListener('DOMContentLoaded', function () {
+            // General Settings Form
             const form = document.getElementById('settingsForm');
             const successMessage = document.getElementById('successMessage');
 
             if (form) {
                 form.addEventListener('submit', function (e) {
                     e.preventDefault();
-
                     const formData = new FormData(form);
                     const notificationsCheckbox = document.getElementById('notifications');
                     formData.set('notifications', notificationsCheckbox.checked ? 'on' : 'off');
@@ -185,17 +184,10 @@
             sidebarItems.forEach(item => {
                 item.addEventListener('click', function () {
                     const section = this.getAttribute('data-section');
-
                     sidebarItems.forEach(i => i.classList.remove('active'));
                     settingsContents.forEach(c => c.classList.remove('active'));
-
                     this.classList.add('active');
                     document.getElementById(section + '-section').classList.add('active');
-
-                    // Initialize categories when that section is opened
-                    if (section === 'categories') {
-                        initializeCategories();
-                    }
                 });
             });
 
@@ -207,93 +199,115 @@
             const categoryForm = document.getElementById('categoryForm');
             const modalTitle = document.getElementById('modalTitle');
 
-            if (addCategoryBtn) {
-                loadCategories();
+            loadCategories();
 
-                addCategoryBtn.addEventListener('click', function () {
-                    modalTitle.textContent = 'Add Category';
-                    categoryForm.reset();
-                    document.getElementById('categoryId').value = '';
-                    modal.style.display = 'block';
-                });
+            addCategoryBtn.addEventListener('click', function () {
+                modalTitle.textContent = 'Add Category';
+                categoryForm.reset();
+                document.getElementById('categoryId').value = '';
+                modal.style.display = 'block';
+            });
 
-                modalClose.addEventListener('click', () => modal.style.display = 'none');
-                modalCancelBtn.addEventListener('click', () => modal.style.display = 'none');
-                window.addEventListener('click', (e) => {
-                    if (e.target == modal) modal.style.display = 'none';
-                });
+            modalClose.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
 
-                categoryForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const categoryId = document.getElementById('categoryId').value;
-                    const formData = {
-                        name: document.getElementById('categoryName').value
-                    };
+            modalCancelBtn.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
 
-                    const url = categoryId ? `/settings/edit_category/${categoryId}` : '/settings/add_category';
-
-                    fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
-                    })
-                        .then(response => {
-                            if (response.ok) {
-                                modal.style.display = 'none';
-                                loadCategories();
-                            } else {
-                                alert('Error saving category');
-                            }
-                        });
-                });
-
-                function loadCategories() {
-                    fetch('/settings/categories')
-                        .then(response => response.json())
-                        .then(categories => {
-                            const list = document.getElementById('categoriesList');
-                            list.innerHTML = '';
-
-                            categories.forEach(cat => {
-                                const item = document.createElement('div');
-                                item.className = 'category-item';
-                                item.innerHTML = `
-                    <div class="category-info">
-                        <span class="category-name">${cat.name}</span>
-                    </div>
-                    <div class="category-actions">
-                        <button class="btn-edit" data-id="${cat.id}" data-name="${cat.name}">Edit</button>
-                        <button class="btn-delete" data-id="${cat.id}">Delete</button>
-                    </div>
-                `;
-                                list.appendChild(item);
-                            });
-
-                            document.querySelectorAll('.btn-edit').forEach(btn => {
-                                btn.addEventListener('click', function () {
-                                    modalTitle.textContent = 'Edit Category';
-                                    document.getElementById('categoryId').value = this.dataset.id;
-                                    document.getElementById('categoryName').value = this.dataset.name;
-                                    modal.style.display = 'block';
-                                });
-                            });
-
-                            document.querySelectorAll('.btn-delete').forEach(btn => {
-                                btn.addEventListener('click', function () {
-                                    if (confirm('Are you sure you want to delete this category?')) {
-                                        fetch(`/settings/delete_category/${this.dataset.id}`, {
-                                            method: 'POST'
-                                        })
-                                            .then(response => {
-                                                if (response.ok) loadCategories();
-                                                else alert('Error deleting category');
-                                            });
-                                    }
-                                });
-                            });
-                        });
+            window.addEventListener('click', function (e) {
+                if (e.target == modal) {
+                    modal.style.display = 'none';
                 }
+            });
+
+            categoryForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const categoryId = document.getElementById('categoryId').value;
+                const formData = {
+                    name: document.getElementById('categoryName').value
+                };
+
+                const url = categoryId ? `/settings/edit_category/${categoryId}` : '/settings/add_category';
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            modal.style.display = 'none';
+                            loadCategories();
+                        } else {
+                            alert('Error saving category');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error saving category');
+                    });
+            });
+
+            function loadCategories() {
+                fetch('/settings/categories')
+                    .then(response => response.json())
+                    .then(categories => {
+                        const list = document.getElementById('categoriesList');
+                        list.innerHTML = '';
+
+                        categories.forEach(cat => {
+                            const item = document.createElement('div');
+                            item.className = 'category-item';
+                            item.innerHTML = `
+                                <div class="category-info">
+                                    <span class="category-name">${cat.name}</span>
+                                </div>
+                                <div class="category-actions">
+                                    <button class="btn-edit" data-id="${cat.id}" data-name="${cat.name}">Edit</button>
+                                    <button class="btn-delete" data-id="${cat.id}">Delete</button>
+                                </div>
+                            `;
+                            list.appendChild(item);
+                        });
+
+                        document.querySelectorAll('.btn-edit').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                modalTitle.textContent = 'Edit Category';
+                                document.getElementById('categoryId').value = this.dataset.id;
+                                document.getElementById('categoryName').value = this.dataset.name;
+                                modal.style.display = 'block';
+                            });
+                        });
+
+                        document.querySelectorAll('.btn-delete').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                if (confirm('Are you sure you want to delete this category?')) {
+                                    fetch(`/settings/delete_category/${this.dataset.id}`, {
+                                        method: 'POST'
+                                    })
+                                        .then(response => {
+                                            if (response.ok) {
+                                                loadCategories();
+                                            } else {
+                                                alert('Error deleting category');
+                                            }
+                                        })
+                                        .catch(error => {
+                                            console.error('Error:', error);
+                                            alert('Error deleting category');
+                                        });
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error loading categories');
+                    });
             }
+        });
     </script>
 </body>
 
