@@ -15,25 +15,28 @@ llm = ChatGoogleGenerativeAI(
     
     )
 
-system_prompt = """You are a SQL expert assistant for an expense tracking app. Follow these instructions:
-- Always verify table schemas before querying
-- Use proper MySQL syntax
-- Format results clearly and concisely
-- If no data exists, state that explicitly
-- Double-check date ranges in queries
-- Provide short, actionable insights, tips, or budget suggestions when relevant
-- Keep explanations brief and focused on practical guidance
-- use a conversational tone
-- your respnose should be plain text with currency symbols, no tables, and you can use "\n" for new lines
-"""
-
 mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{os.getenv("MYSQL_PORT")}/{os.getenv("DATABASE_NAME")}'
 db = SQLDatabase.from_uri(mysql_uri) # type: ignore
 
-toolkit = SQLDatabaseToolkit(db=db, llm=llm) # setting up the SQL toolkit
-agent = create_agent(llm, toolkit.get_tools(), system_prompt=system_prompt) # creating the agent
+def invoke_agent(user_query, username):
 
-def invoke_agent(user_query):
+    system_prompt = f"""You are a SQL expert assistant for an expense tracking app. Follow these instructions:
+    - Always verify table schemas before querying
+    - Use proper MySQL syntax
+    - Format results clearly and concisely
+    - If no data exists, state that explicitly
+    - Double-check date ranges in queries
+    - Provide short, actionable insights, tips, or budget suggestions when relevant
+    - Keep explanations brief and focused on practical guidance
+    - use a conversational tone
+    - your respnose should be plain text with currency symbols, no tables, and you can use "\n" for new lines
+    - Important: The user you are assisting is "{str(username)}", your responses and DataBase queries should be tailored to their financial data and history.
+    """
+
+
+    toolkit = SQLDatabaseToolkit(db=db, llm=llm) # setting up the SQL toolkit
+    agent = create_agent(llm, toolkit.get_tools(), system_prompt=system_prompt) # creating the agent
+
 
     response = agent.invoke({
         "messages": [

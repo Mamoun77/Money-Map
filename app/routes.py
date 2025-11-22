@@ -8,192 +8,6 @@ import os
 
 load_dotenv('../credentials.env') #load environment variables (credentials and API keys) from a .env file
 
-
-records_test = [
-    {
-        'id': 1,
-        'description': 'Grocery Shopping',
-        'amount': '85.50',
-        'type': 'expense',
-        'category': 'Food & Dining',
-        'account': 'Checking Account',
-        'date': '2025-11-05',
-        'time': '14:30'
-    },
-    {
-        'id': 2,
-        'description': 'Salary Deposit',
-        'amount': '3200.00',
-        'type': 'income',
-        'category': 'Salary',
-        'account': 'Checking Account',
-        'date': '2025-11-01',
-        'time': '09:00'
-    },
-    {
-        'id': 3,
-        'description': 'Coffee Shop',
-        'amount': '4.50',
-        'type': 'expense',
-        'category': 'Food & Dining',
-        'account': 'Cash',
-        'date': '2025-11-05',
-        'time': '08:15'
-    },
-    {
-        'id': 4,
-        'description': 'Electric Bill',
-        'amount': '120.00',
-        'type': 'expense',
-        'category': 'Utilities',
-        'account': 'Checking Account',
-        'date': '2025-11-03',
-        'time': '16:45'
-    },
-    {
-        'id': 5,
-        'description': 'Freelance Project',
-        'amount': '500.00',
-        'type': 'income',
-        'category': 'Freelance',
-        'account': 'Savings Account',
-        'date': '2025-10-28',
-        'time': '11:20'
-    },
-    {
-        'id': 6,
-        'description': 'Uber Ride',
-        'amount': '25.75',
-        'type': 'expense',
-        'category': 'Transportation',
-        'account': 'Checking Account',
-        'date': '2025-11-07',
-        'time': '18:30'
-    },
-    {
-        'id': 7,
-        'description': 'Netflix Subscription',
-        'amount': '15.99',
-        'type': 'expense',
-        'category': 'Entertainment',
-        'account': 'Checking Account',
-        'date': '2025-11-01',
-        'time': '10:00'
-    },
-    {
-        'id': 8,
-        'description': 'Online Shopping',
-        'amount': '67.20',
-        'type': 'expense',
-        'category': 'Shopping',
-        'account': 'Credit Card',
-        'date': '2025-11-06',
-        'time': '20:15'
-    },
-    {
-        'id': 9,
-        'description': 'Restaurant Dinner',
-        'amount': '45.00',
-        'type': 'expense',
-        'category': 'Food & Dining',
-        'account': 'Credit Card',
-        'date': '2025-11-08',
-        'time': '19:45'
-    },
-    {
-        'id': 10,
-        'description': 'Gas Station',
-        'amount': '55.00',
-        'type': 'expense',
-        'category': 'Transportation',
-        'account': 'Checking Account',
-        'date': '2025-11-04',
-        'time': '07:30'
-    },
-    {
-        'id': 11,
-        'description': 'Salary Deposit',
-        'amount': '3200.00',
-        'type': 'income',
-        'category': 'Salary',
-        'account': 'Checking Account',
-        'date': '2025-10-01',
-        'time': '09:00'
-    },
-    {
-        'id': 12,
-        'description': 'Internet Bill',
-        'amount': '89.99',
-        'type': 'expense',
-        'category': 'Utilities',
-        'account': 'Checking Account',
-        'date': '2025-10-15',
-        'time': '12:00'
-    },
-    {
-        'id': 13,
-        'description': 'Movie Tickets',
-        'amount': '32.00',
-        'type': 'expense',
-        'category': 'Entertainment',
-        'account': 'Cash',
-        'date': '2025-10-20',
-        'time': '18:00'
-    },
-    {
-        'id': 14,
-        'description': 'Freelance Consulting',
-        'amount': '750.00',
-        'type': 'income',
-        'category': 'Freelance',
-        'account': 'Savings Account',
-        'date': '2025-11-10',
-        'time': '14:00'
-    },
-    {
-        'id': 15,
-        'description': 'Clothing Store',
-        'amount': '120.00',
-        'type': 'expense',
-        'category': 'Shopping',
-        'account': 'Credit Card',
-        'date': '2025-10-25',
-        'time': '15:30'
-    }
-]
-
-accounts_test = [
-        {
-            'id': '1',
-            'name': 'Checking Account',
-            'balance': '2340.00',
-            'icon': '💳',
-            'type': 'Checking',
-            'last_updated': 'Today',
-            'transaction_count': '24'
-        },
-        {
-            'id': '2',
-            'name': 'Savings Account',
-            'balance': '3080.00',
-            'icon': '💰',
-            'type': 'Savings',
-            'last_updated': 'Yesterday',
-            'transaction_count': '12'
-        },
-        {
-            'id': '3',
-            'name': 'Cash',
-            'balance': '450.00',
-            'icon': '💵',
-            'type': 'Cash',
-            'last_updated': '2 days ago',
-            'transaction_count': '8'
-        }
-    ]
-
-categories_test = ['Food & Dining', 'Salary', 'Utilities', 'Freelance', 'Transportation', 'Entertainment', 'Shopping']
-
 app = Flask("Money-Map")
 
 app.secret_key = os.getenv('SECRET_KEY')  # Add SECRET_KEY to your .env file
@@ -359,17 +173,18 @@ def other():
 def ai_agent():
     if request.method == 'POST':
         query = request.form.get('query')
-        response = invoke_agent(query)
+        response = invoke_agent(query, current_user.username)
         return jsonify({'response': response})
     
-    else:  # Else if the method is GET
+    else:  # if the method is GET
 
+        records_list, accounts, categories = rendering_records_accounts_categories()
 
         return render_template('ai_agent.html',
                                 username=current_user.username,
-                                records=records_test,
-                                accounts=accounts_test,
-                                categories=categories_test)
+                                records=records_list,
+                                accounts=accounts,
+                                categories=categories)
 
 @app.route('/home')
 @login_required
@@ -634,7 +449,7 @@ def edit_category(category_id):
     categorie = Categories.query.get(category_id)
     
     categorie.name = data.get('name') # Update category name in database with data
-    
+
     db.session.commit()
 
     return '', 204
