@@ -113,7 +113,16 @@
                 if (!response.ok) throw new Error('Network response was not ok');
 
                 const data = await response.json();
-                const formated_response = data.response.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                console.log('Backend response:', data); // Add this to debug
+
+                let responseText;
+                if (Array.isArray(data.response)) {
+                    responseText = data.response[0].text;
+                } else {
+                    responseText = data.response;
+                }
+
+                const formated_response = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
                 addMessage(formated_response, false);
 
             } catch (error) {
