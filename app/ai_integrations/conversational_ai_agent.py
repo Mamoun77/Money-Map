@@ -18,7 +18,9 @@ llm = ChatGoogleGenerativeAI(
 mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{os.getenv("MYSQL_PORT")}/{os.getenv("DATABASE_NAME")}'
 db = SQLDatabase.from_uri(mysql_uri) # type: ignore
 
-def invoke_agent(user_query, username):
+import time
+def initialize_agent(username):
+    start_time = time.time()
 
     system_prompt = f"""You are a SQL expert assistant for an expense tracking app. Follow these instructions:
     - Always verify table schemas before querying
@@ -32,11 +34,15 @@ def invoke_agent(user_query, username):
     - your respnose should be plain text with currency symbols, no tables, and you can use "\n" for new lines
     - Important: The user you are assisting is "{str(username)}", your responses and DataBase queries should be tailored to their financial data and history.
     """
-
-
+    
     toolkit = SQLDatabaseToolkit(db=db, llm=llm) # setting up the SQL toolkit
+    global agent
     agent = create_agent(llm, toolkit.get_tools(), system_prompt=system_prompt) # creating the agent
+    end_time = time.time()
+    initialization_time = end_time - start_time
+    print(f"Agent initialized in {initialization_time:.2f} seconds.")
 
+def invoke_agent(user_query):
 
     response = agent.invoke({
         "messages": [

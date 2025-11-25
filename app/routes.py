@@ -1,4 +1,4 @@
-from ai_integrations.conversational_ai_agent import invoke_agent
+from ai_integrations.conversational_ai_agent import initialize_agent, invoke_agent
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -168,18 +168,26 @@ def logout():
 def other():
     return redirect(url_for('home'))
 
+agent_initialized = False
 @app.route('/ai_agent', methods=['GET', 'POST'])
 @login_required
 def ai_agent():
+    global agent_initialized
+    
     if request.method == 'POST':
+        if not agent_initialized:
+            initialize_agent(current_user.username)
+            agent_initialized = True
+
         query = request.form.get('query')
-        response = invoke_agent(query, current_user.username)
+        response = invoke_agent(query)
         return jsonify({'response': response})
     
     else:  # if the method is GET
 
-        records_list, accounts, categories = rendering_records_accounts_categories()
+        initialize_agent(current_user.username)
 
+        records_list, accounts, categories = rendering_records_accounts_categories()
         return render_template('ai_agent.html',
                                 username=current_user.username,
                                 records=records_list,
