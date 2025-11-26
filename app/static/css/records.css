@@ -9,7 +9,6 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Main Container Layout */
 .main-container {
     display: flex;
     gap: 30px;
@@ -18,11 +17,10 @@
     padding: 30px;
 }
 
-/* Filter Sidebar */
 .filter-sidebar {
     flex-shrink: 0;
     width: 280px;
-    background: white;
+    background: var(--card-bg);
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -41,12 +39,12 @@
 
 .filter-header h2 {
     font-size: 22px;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .reset-btn {
-    background: #f0f0f0;
-    color: #666;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
     border: none;
     padding: 8px 16px;
     border-radius: 6px;
@@ -57,8 +55,8 @@
 }
 
 .reset-btn:hover {
-    background: #e0e0e0;
-    color: #333;
+    background: var(--border-color);
+    color: var(--text-primary);
 }
 
 .filter-group {
@@ -68,43 +66,22 @@
 .filter-group label {
     display: block;
     margin-bottom: 8px;
-    color: #555;
+    color: var(--text-secondary);
     font-weight: 600;
     font-size: 14px;
 }
 
-.filter-group select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #333;
-    background: white;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-}
-
-.filter-group input[type="date"] {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    color: #333;
-    background: white;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-}
-
+.filter-group select,
+.filter-group input[type="date"],
 .filter-group input[type="text"] {
     width: 100%;
     padding: 12px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border-color);
     border-radius: 8px;
     font-size: 14px;
-    color: #333;
-    background: white;
+    color: var(--text-primary);
+    background: var(--card-bg);
+    cursor: pointer;
     transition: border-color 0.2s ease;
 }
 
@@ -122,20 +99,19 @@
 }
 
 .custom-date-range {
-    background: #f9f9f9;
+    background: var(--bg-primary);
     padding: 15px;
     border-radius: 8px;
     margin-top: -10px;
 }
 
-/* Records Content */
 .records-content {
     flex: 1;
     min-width: 0;
 }
 
 .records-header {
-    background: white;
+    background: var(--card-bg);
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
@@ -147,11 +123,11 @@
 
 .records-header h1 {
     font-size: 28px;
-    color: #333;
+    color: var(--text-primary);
 }
 
 .records-count {
-    color: #666;
+    color: var(--text-secondary);
     font-size: 16px;
 }
 
@@ -160,7 +136,6 @@
     color: #059669;
 }
 
-/* Records List */
 .records-list {
     display: flex;
     flex-direction: column;
@@ -168,7 +143,7 @@
 }
 
 .record-item {
-    background: white;
+    background: var(--card-bg);
     padding: 20px 25px;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -230,7 +205,7 @@
 .record-description {
     font-size: 18px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 8px;
 }
 
@@ -239,7 +214,7 @@
     flex-wrap: wrap;
     gap: 15px;
     font-size: 13px;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .meta-item {
@@ -267,7 +242,7 @@
 }
 
 .action-btn {
-    background: #f0f0f0;
+    background: var(--bg-primary);
     border: none;
     width: 35px;
     height: 35px;
@@ -302,15 +277,14 @@
 }
 
 .no-records {
-    background: white;
+    background: var(--card-bg);
     padding: 60px 40px;
     border-radius: 12px;
     text-align: center;
-    color: #999;
+    color: var(--text-secondary);
     font-size: 16px;
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
     .main-container {
         flex-direction: column;
@@ -372,7 +346,7 @@
 }
 
 .edit-modal {
-    background: white;
+    background: var(--card-bg);
     border-radius: 20px;
     width: 90%;
     max-width: 700px;
@@ -441,7 +415,7 @@
 .form-group label {
     display: block;
     font-weight: 600;
-    color: #333;
+    color: var(--text-primary);
     margin-bottom: 8px;
     font-size: 14px;
 }
@@ -451,12 +425,14 @@
 .form-group textarea {
     width: 100%;
     padding: 12px 15px;
-    border: 2px solid #e0e0e0;
+    border: 2px solid var(--border-color);
     border-radius: 10px;
     font-size: 15px;
     outline: none;
     transition: border-color 0.3s ease;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--card-bg);
+    color: var(--text-primary);
 }
 
 .form-group input:focus,
@@ -481,7 +457,7 @@
     gap: 15px;
     justify-content: flex-end;
     padding: 20px 30px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border-color);
 }
 
 .btn-cancel,
@@ -496,12 +472,12 @@
 }
 
 .btn-cancel {
-    background: #f0f0f0;
-    color: #666;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
 }
 
 .btn-cancel:hover {
-    background: #e0e0e0;
+    background: var(--border-color);
 }
 
 .btn-save {

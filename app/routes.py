@@ -462,10 +462,24 @@ def edit_category(category_id):
 
     return '', 204
 
-# @app.route('/test')
-# def test():
-#   flash('Registration successful! Please login.', 'success')
-#     return ""
+@app.route('/get_theme')
+@login_required
+def get_theme():
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    return jsonify({'dark_mode': settings.theme == 'dark'})
+
+@app.route('/update_theme', methods=['POST'])
+@login_required
+def update_theme():
+    data = request.get_json()
+    dark_mode = data.get('dark_mode')
+    new_theme = 'dark' if dark_mode else 'light'
+
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    settings.theme = new_theme
+    db.session.commit()
+
+    return '', 204
 
 
 app.run(debug=True)

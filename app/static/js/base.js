@@ -83,3 +83,35 @@ document.getElementById('addModal').addEventListener('click', function (e) {
         closeAddModal();
     }
 });
+
+// Dark mode functionality
+function applyTheme(isDark) {
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('themeIcon').textContent = '☀️';
+    } else {
+        document.body.classList.remove('dark-mode');
+        document.getElementById('themeIcon').textContent = '🌙';
+    }
+}
+
+// Fetch user theme preference on page load
+fetch('/get_theme')
+    .then(response => response.json())
+    .then(data => {
+        applyTheme(data.dark_mode);
+    });
+
+// Toggle theme
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+
+    fetch('/update_theme', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ dark_mode: isDark })
+    });
+}
