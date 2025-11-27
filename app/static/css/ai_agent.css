@@ -16,6 +16,10 @@ body.dark-mode {
     --border-color: #404040;
     --card-bg: #2d2d2d;
     --modal-bg: #252525;
+    background: radial-gradient(circle at center,
+            rgba(10, 10, 10, 0.95) 0%,
+            rgba(20, 20, 20, 1) 40%,
+            rgba(26, 26, 26, 1) 100%);
 }
 
 * {
@@ -31,7 +35,10 @@ body.dark-mode {
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-primary);
+    background: radial-gradient(circle at center,
+            rgba(16, 109, 185, 0.3) 0%,
+            rgba(16, 165, 157, 1) 40%,
+            rgba(16, 185, 129, 1) 100%);
     min-height: 100vh;
 }
 
