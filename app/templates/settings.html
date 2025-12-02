@@ -81,6 +81,66 @@
                         </div>
                     </div>
 
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-icon">👤</div>
+                            <div class="setting-details">
+                                <h3>First Name</h3>
+                                <p>Update your first name</p>
+                            </div>
+                        </div>
+                        <input type="text" name="first_name" id="first_name" class="setting-input"
+                            value="{{ first_name }}" maxlength="50">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-icon">👤</div>
+                            <div class="setting-details">
+                                <h3>Last Name</h3>
+                                <p>Update your last name</p>
+                            </div>
+                        </div>
+                        <input type="text" name="last_name" id="last_name" class="setting-input" value="{{ last_name }}"
+                            maxlength="50">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-icon">📧</div>
+                            <div class="setting-details">
+                                <h3>Email</h3>
+                                <p>Update your email address</p>
+                            </div>
+                        </div>
+                        <input type="email" name="email" id="email" class="setting-input" value="{{ email }}"
+                            maxlength="100">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-icon">🔑</div>
+                            <div class="setting-details">
+                                <h3>Username</h3>
+                                <p>Update your username</p>
+                            </div>
+                        </div>
+                        <input type="text" name="username" id="username" class="setting-input" value="{{ username }}"
+                            maxlength="50">
+                    </div>
+
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <div class="setting-icon">🔒</div>
+                            <div class="setting-details">
+                                <h3>Password</h3>
+                                <p>Leave blank to keep current password</p>
+                            </div>
+                        </div>
+                        <input type="password" name="password" id="password" class="setting-input"
+                            placeholder="Enter new password" maxlength="100">
+                    </div>
+
                     <div class="settings-actions">
                         <button type="submit" class="btn-save">Save Changes</button>
                         <button type="button" class="btn-cancel"
@@ -144,6 +204,12 @@
                     const formData = new FormData(form);
                     const notificationsCheckbox = document.getElementById('notifications');
                     formData.set('notifications', notificationsCheckbox.checked ? 'on' : 'off');
+
+                    // Only include password if it's not empty
+                    const password = document.getElementById('password').value;
+                    if (!password) {
+                        formData.delete('password');
+                    }
 
                     fetch(form.action, {
                         method: 'POST',

@@ -228,6 +228,27 @@ body.dark-mode {
     display: flex;
     gap: 15px;
     justify-content: center;
+    margin-top: 30px;
+}
+
+.settings-section form {
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .setting-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        /* Change from 20px to 15px */
+    }
+
+    .setting-input {
+        width: 100%;
+        min-width: unset;
+        margin-top: 5px;
+        /* Add this */
+    }
 }
 
 .btn-save,
@@ -533,5 +554,32 @@ body.dark-mode {
     .btn-edit,
     .btn-delete {
         flex: 1;
+    }
+}
+
+.setting-input {
+    padding: 12px 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 16px;
+    color: var(--text-primary);
+    background: var(--card-bg);
+    transition: border-color 0.3s ease;
+    min-width: 250px;
+}
+
+.setting-input:focus {
+    outline: none;
+    border-color: #10b981;
+}
+
+.setting-input:hover {
+    border-color: #10b981;
+}
+
+@media (max-width: 768px) {
+    .setting-input {
+        width: 100%;
+        min-width: unset;
     }
 }

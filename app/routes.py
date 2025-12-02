@@ -415,8 +415,32 @@ def save_settings():
     currency = request.form.get('currency', 'USD')
     language = request.form.get('language', 'en')
     notifications = request.form.get('notifications') == 'on'
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    username = request.form.get('username')
+    password = request.form.get('password')
     
-    print(f"Settings saved: Currency={currency}, Language={language}, Notifications={notifications}")
+    user_id = session['user_id']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Update user settings
+    cursor.execute('''
+        UPDATE users 
+        SET currency = ?, language = ?, notifications = ?, 
+            first_name = ?, last_name = ?, email = ?, username = ?
+        WHERE id = ?
+    ''', (currency, language, notifications, first_name, last_name, email, username, user_id))
+    
+    # Update password only if provided
+    if password:
+        hashed_password = generate_password_hash(password)
+        cursor.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_password, user_id))
+    
+    conn.commit()
+    conn.close()
+    
     return '', 204
 
 @app.route('/settings/categories', methods=['GET'])
@@ -433,7 +457,7 @@ def add_category():
     data = request.get_json()
     new_category = Categories(
         user_id=current_user.id,
-        name=data.get('name')
+        name=data.get('name')   
     )
 
     db.session.add(new_category)
