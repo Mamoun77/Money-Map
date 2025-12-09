@@ -216,7 +216,30 @@
         </div>
     </div>
 
+    <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()" title="Back to top">
+        ↑
+    </button>
+
     <script>
+
+        
+        // Scroll to top functionality
+        const scrollTopBtn = document.getElementById('scrollTopBtn');
+
+        window.addEventListener('scroll', function () {
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
         // Currency formatter
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
