@@ -6,6 +6,15 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import os
 
+import random
+import smtplib 
+from email.mime.text import MIMEText # For sending emails to the user
+from email.mime.multipart import MIMEMultipart
+from datetime import datetime, timedelta
+
+# Store verification codes temporarily for multiple users
+verification_codes = {}
+
 load_dotenv('../credentials.env') #load environment variables (credentials and API keys) from a .env file
 
 app = Flask("Money-Map")
@@ -504,6 +513,107 @@ def update_theme():
     db.session.commit()
 
     return '', 204
+
+
+
+def send_verification_email(to_email, code):
+    """Send verification code via email"""
+    from_email = os.getenv('APP_ACCOUNT_EMAIL_ADDRESS')
+    password = os.getenv('APP_ACCOUNT_PASSWORD')
+    
+    msg = MIMEMultipart()
+    msg['From'] = from_email
+    msg['To'] = to_email
+    msg['Subject'] = 'Money Map - Password Recovery Code'
+    
+    # the HTML body of the email
+    body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #10b981;">Password Recovery</h2>
+            <p>Your verification code is:</p>
+            <h1 style="color: #333; font-size: 36px; letter-spacing: 5px;">{code}</h1>
+            <p>This code will expire in 10 minutes.</p>
+            <p style="color: #666; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+        </body>
+    </html>
+    """
+    
+    msg.attach(MIMEText(body, 'html'))
+    
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587) # for sending email via Gmail SMTP server
+        server.starttls()
+        server.login(from_email, password) # Login to the email server from the app credentials
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Email error: {e}")
+        return False
+
+@app.route('/recover_password')
+def recover_password():
+    return render_template('recover_password.html')
+
+@app.route('/recover/send_code', methods=['POST'])
+def send_code():
+    data = request.get_json()
+    email = data.get('email')
+    
+    user = User.query.filter_by(email=email).first() # Check if the email exists in the database
+    if not user:
+        return jsonify({'message': 'Email not found'}), 404
+    
+    code = str(random.randint(100000, 999999)) # Generate a 6-digit verification code
+    expires_at = datetime.utcnow() + timedelta(minutes=10) # Code expires in 10 minutes
+    
+    verification_codes[email] = { # Store the code and its expiration time
+        'code': code,
+        'expires': expires_at
+    }
+    
+    if send_verification_email(email, code):
+        return jsonify({'message': 'Code sent successfully'}), 200
+    else:
+        return jsonify({'message': 'Failed to send email'}), 500
+
+@app.route('/recover/verify_code', methods=['POST'])
+def verify_code():
+    data = request.get_json()
+    email = data.get('email')
+    code = data.get('code')
+    
+    if email not in verification_codes:
+        return jsonify({'message': 'No code found'}), 400
+    
+    stored = verification_codes[email]
+    
+    if datetime.utcnow() > stored['expires']: # Check if the code has expired
+        del verification_codes[email]
+        return jsonify({'message': 'Code expired'}), 400
+    
+    if stored['code'] != code: # Check if the code matches
+        return jsonify({'message': 'Invalid code'}), 400
+    
+    return jsonify({'message': 'Code verified'}), 200
+
+@app.route('/recover/reset_password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    email = data.get('email')
+    new_password = data.get('password')
+    
+    if email not in verification_codes:
+        return jsonify({'message': 'Session expired'}), 400
+    
+    user = User.query.filter_by(email=email).first()
+    user.password = generate_password_hash(new_password)
+    db.session.commit()
+
+    del verification_codes[email] # Remove the verification code after successful reset
+
+    return jsonify({'message': 'Password reset successful'}), 200
 
 
 app.run(debug=True)
