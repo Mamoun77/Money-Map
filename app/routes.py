@@ -68,6 +68,15 @@ class UserSettings(db.Model):
     theme = db.Column(db.String(20), default='light')
     notification_enabled = db.Column(db.Boolean, default=True)
 
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    title = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text)
+    is_read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 def rendering_records_accounts_categories(): # For fetching records, accounts, and categories from the database for the current user
     records = db.session.query(Records, Accounts, Categories)\
         .join(Accounts, Records.account_id == Accounts.id)\
@@ -614,6 +623,40 @@ def reset_password():
     del verification_codes[email] # Remove the verification code after successful reset
 
     return jsonify({'message': 'Password reset successful'}), 200
+
+
+# Notification routes
+@app.route('/notifications/get', methods=['GET'])
+@login_required
+def get_notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id)\
+        .order_by(Notification.created_at.desc()).all()
+    
+    notifications_list = [{
+        'id': n.id,
+        'title': n.title,
+        'message': n.message,
+        'is_read': n.is_read,
+        'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
+    } for n in notifications]
+    
+    return jsonify(notifications_list)
+
+@app.route('/notifications/mark_read/<int:notification_id>', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    notification = Notification.query.get(notification_id)
+    if notification and notification.user_id == current_user.id: # Ensures the notification belongs to the current user
+        notification.is_read = True
+        db.session.commit()
+    return '', 204
+
+@app.route('/notifications/mark_all_read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({Notification.is_read: True}) # mark all unread notifications as read
+    db.session.commit()
+    return '', 204
 
 
 app.run(debug=True)
