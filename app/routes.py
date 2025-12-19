@@ -439,28 +439,27 @@ def save_settings():
     username = request.form.get('username')
     password = request.form.get('password')
     
-    user_id = session['user_id']
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Update user settings in UserSettings table
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    if settings:
+        settings.currency = currency
+        settings.language = language
+        settings.notification_enabled = notifications
     
-    # Update user settings
-    cursor.execute('''
-        UPDATE users 
-        SET currency = ?, language = ?, notifications = ?, 
-            first_name = ?, last_name = ?, email = ?, username = ?
-        WHERE id = ?
-    ''', (currency, language, notifications, first_name, last_name, email, username, user_id))
+    # Update user information in Users table
+    user = User.query.get(current_user.id)
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = email
+    user.username = username
     
     # Update password only if provided
     if password:
-        hashed_password = generate_password_hash(password)
-        cursor.execute('UPDATE users SET password = ? WHERE id = ?', (hashed_password, user_id))
+        user.password = generate_password_hash(password)
     
-    conn.commit()
-    conn.close()
+    db.session.commit()
     
     return '', 204
-
 @app.route('/settings/categories', methods=['GET'])
 @login_required
 def get_categories():
@@ -632,6 +631,10 @@ def get_notifications():
     notifications = Notification.query.filter_by(user_id=current_user.id)\
         .order_by(Notification.created_at.desc()).all()
     
+    # Get user settings to check if notifications are enabled
+    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    notification_enabled = settings.notification_enabled if settings else True
+    
     notifications_list = [{
         'id': n.id,
         'title': n.title,
@@ -640,7 +643,10 @@ def get_notifications():
         'created_at': n.created_at.strftime('%Y-%m-%d %H:%M')
     } for n in notifications]
     
-    return jsonify(notifications_list)
+    return jsonify({
+        'notifications': notifications_list,
+        'notification_enabled': notification_enabled
+    })
 
 @app.route('/notifications/mark_read/<int:notification_id>', methods=['POST'])
 @login_required
