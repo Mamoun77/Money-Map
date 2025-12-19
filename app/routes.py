@@ -411,17 +411,22 @@ def update_record(record_id):
 @app.route('/settings')
 @login_required
 def settings():
-    currency = 'USD'
-    language = 'en'
-    notifications = True
+    # Fetch user settings from database
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    
+    # If no settings exist, create default ones
+    if not user_settings:
+        user_settings = UserSettings(user_id=current_user.id)
+        db.session.add(user_settings)
+        db.session.commit()
 
     records_list, accounts, categories = rendering_records_accounts_categories()
 
     
     return render_template('settings.html',
-                         currency=currency,
-                         language=language,
-                         notifications=notifications,
+                         currency=user_settings.currency,
+                         language=user_settings.language,
+                         notifications=user_settings.notification_enabled,
                          username=current_user.username,
                          records=records_list,
                          accounts=accounts,
