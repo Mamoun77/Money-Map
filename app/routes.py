@@ -1,4 +1,4 @@
-from ai_integrations.conversational_ai_agent import initialize_agent, invoke_agent
+from app.ai_integrations.conversational_ai_agent.agent import initialize_agent, invoke_agent
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
@@ -14,12 +14,17 @@ from email.mime.text import MIMEText # For sending emails to the user
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 
+# for adding a record from an image via AI agent
+from app.ai_integrations.add_record_agent.agent import parse_financial_record
+# from ai_integrations.ocr.
+
+
 # Store verification codes temporarily for multiple users
 verification_codes = {}
 
 load_dotenv('../credentials.env') #load environment variables (credentials and API keys) from a .env file
 
-app = Flask("Money-Map")
+app = Flask(__name__)
 
 app.secret_key = os.getenv('SECRET_KEY')  # Add SECRET_KEY to your .env file
 app.config['SQLALCHEMY_DATABASE_URI'] = (f"""mysql+pymysql://{os.getenv('MYSQL_USERNAME')}:{os.getenv('MYSQL_PASSWORD')}@{os.getenv('MYSQL_HOST')}/{os.getenv('DATABASE_NAME')}""")
@@ -444,10 +449,10 @@ def add_record():
     # Check if photo is included
     if 'photo' in request.files:
         photo = request.files['photo']
-        if photo.filename != '':
-            # TODO: Process photo here
-            # For now, just acknowledge it exists
-            pass
+        print(f"type of photo: {type(photo)}")
+            
+        # parse_financial_record()
+        pass
     
     # Get form data (now from FormData instead of JSON)
     new_record = Records(
@@ -467,12 +472,6 @@ def add_record():
     check_spending_limits(current_user.id)
 
     return '', 204  # No Content returned, just that the addition was successful
-
-@app.route('/process_receipt_photo', methods=['POST'])
-@login_required
-def process_receipt_photo():
-    # TODO: Implement photo processing logic
-    return jsonify({'success': True, 'message': 'Photo processing not implemented yet'}), 200
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 @login_required

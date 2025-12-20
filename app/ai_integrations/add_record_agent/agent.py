@@ -21,7 +21,7 @@ Extract and structure the following information from the OCR text:
 
 ### Output Fields:
 
-
+  "valid_input" : "valid" or "not_valid", this shoud be "not_valid" only if the OCR text is completely irrelevant to financial transactions, other wise always "valid",
   "description": "Brief, clear description of the transaction",
   "type": "Expense" or "Income",
   "amount": numeric value only (no currency symbols),
@@ -93,7 +93,7 @@ Current DateTime: 2024-03-20 15:30
 ```
 
 **Output:**
-
+  "valid_input" : "valid",
   "description": "Whole Foods Market - Groceries",
   "type": "Expense",
   "amount": 10.48,
@@ -107,6 +107,7 @@ Always be consistent and accurate.
 """
 
 class FinancialRecordOutput(TypedDict):
+    valid_input: Literal["valid", "not_valid"]
     description: str
     type: Literal["Expense", "Income"]
     amount: float
@@ -129,4 +130,4 @@ def parse_financial_record(input_ocr: str, accounts: list[str], categories: list
             
         ])
     
-    return result
+    return result # Returns a python dictionary

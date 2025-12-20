@@ -6,8 +6,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI #for using Google Gemi
 from dotenv import load_dotenv
 import os
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-load_dotenv(os.path.join(script_dir, '../../credentials.env')) # load environment variables (credentials and API keys) from a .env file
+
+load_dotenv(os.path.join(r'C:\My Projects\Money-Map\credentials.env')) # load environment variables (credentials and API keys) from a .env file
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-preview-09-2025",
