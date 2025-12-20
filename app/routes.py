@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import date, timedelta
+from sqlalchemy import func
 from dotenv import load_dotenv
 import os
 
@@ -354,6 +356,88 @@ def records():
                          categories=categories)
 
 
+def check_spending_limits(user_id):
+    """Check if user has exceeded spending limits and create notifications"""
+
+    # Get user settings to check if notifications are enabled
+    settings = UserSettings.query.filter_by(user_id=user_id).first()
+    if not settings or not settings.notification_enabled:
+        return
+    
+    today = date.today()
+    week_ago = today - timedelta(days=7)
+    month_ago = today - timedelta(days=30)
+    
+    
+    # Daily limit check
+    daily_expenses = db.session.query(func.sum(Records.amount))\
+        .filter(Records.user_id == user_id, 
+                Records.type == 'expense',
+                Records.date == today)\
+        .scalar() or 0
+    
+    if daily_expenses > 50:
+        # Check if notification already exists for today
+        existing = Notification.query.filter(
+            Notification.user_id == user_id,
+            Notification.title == 'Daily Spending Limit Exceeded',
+            func.date(Notification.created_at) == today
+        ).first()
+        
+        if not existing:
+            notif = Notification(
+                user_id=user_id,
+                title='Daily Spending Limit Exceeded',
+                message=f'Your daily expenses have reached {float(daily_expenses):.2f}, exceeding the 50 limit warning.'
+            )
+            db.session.add(notif)
+    
+    # Weekly limit check
+    weekly_expenses = db.session.query(func.sum(Records.amount))\
+        .filter(Records.user_id == user_id,
+                Records.type == 'expense',
+                Records.date >= week_ago)\
+        .scalar() or 0
+    
+    if weekly_expenses > 400:
+        existing = Notification.query.filter(
+            Notification.user_id == user_id,
+            Notification.title == 'Weekly Spending Limit Exceeded',
+            Notification.created_at >= datetime.utcnow() - timedelta(days=7)
+        ).first()
+        
+        if not existing:
+            notif = Notification(
+                user_id=user_id,
+                title='Weekly Spending Limit Exceeded',
+                message=f'Your weekly expenses have reached {float(weekly_expenses):.2f}, exceeding the 400 limit warning.'
+            )
+            db.session.add(notif)
+    
+    # Monthly limit check
+    monthly_expenses = db.session.query(func.sum(Records.amount))\
+        .filter(Records.user_id == user_id,
+                Records.type == 'expense',
+                Records.date >= month_ago)\
+        .scalar() or 0
+    
+    if monthly_expenses > 2000:
+        existing = Notification.query.filter(
+            Notification.user_id == user_id,
+            Notification.title == 'Monthly Spending Limit Exceeded',
+            Notification.created_at >= datetime.utcnow() - timedelta(days=30)
+        ).first()
+        
+        if not existing:
+            notif = Notification(
+                user_id=user_id,
+                title='Monthly Spending Limit Exceeded',
+                message=f'Your monthly expenses have reached {float(monthly_expenses):.2f}, exceeding the 2000 limit warning.'
+            )
+            db.session.add(notif)
+    
+    db.session.commit()
+
 @app.route('/add_record', methods=['POST'])
 @login_required
 def add_record():
@@ -373,7 +457,7 @@ def add_record():
     db.session.add(new_record)
     db.session.commit()
 
-
+    check_spending_limits(current_user.id)
 
     return '', 204  # No Content returned, just that the addition was successful
 
