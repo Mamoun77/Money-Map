@@ -36,45 +36,66 @@ function addRecord() {
 // Close add record modal
 function closeAddModal() {
     document.getElementById('addModal').classList.remove('active');
+    switchMode('manual');
     removePhoto();
     closeCamera();
 }
 
 // Save new record
 function saveNewRecord() {
-    const description = document.getElementById('addDescription').value.trim();
-    const amount = document.getElementById('addAmount').value;
+    if (currentMode === 'manual') {
+        const description = document.getElementById('addDescription').value.trim();
+        const amount = document.getElementById('addAmount').value;
 
-    if (!description || !amount) {
-        alert('Please fill in all required fields.');
-        return;
-    }
+        if (!description || !amount) {
+            alert('Please fill in all required fields.');
+            return;
+        }
 
-    const formData = new FormData();
-    formData.append('description', description);
-    formData.append('type', document.getElementById('addType').value);
-    formData.append('amount', parseFloat(amount));
-    formData.append('category', document.getElementById('addCategory').value);
-    formData.append('account', document.getElementById('addAccount').value);
-    formData.append('date', document.getElementById('addDate').value);
-    formData.append('time', document.getElementById('addTime').value);
+        const formData = new FormData();
+        formData.append('description', description);
+        formData.append('type', document.getElementById('addType').value);
+        formData.append('amount', parseFloat(amount));
+        formData.append('category', document.getElementById('addCategory').value);
+        formData.append('account', document.getElementById('addAccount').value);
+        formData.append('date', document.getElementById('addDate').value);
+        formData.append('time', document.getElementById('addTime').value);
 
-    if (selectedPhotoFile) {
+        fetch('/add_record', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (response.ok) {
+                    closeAddModal();
+                    location.reload();
+                } else {
+                    alert('Failed to add record.');
+                }
+            });
+    } else {
+        // AI Mode
+        if (!selectedPhotoFile) {
+            alert('Please upload or capture a photo.');
+            return;
+        }
+
+        const formData = new FormData();
         formData.append('photo', selectedPhotoFile);
-    }
 
-    fetch('/add_record', {
-        method: 'POST',
-        body: formData
-    })
-        .then(response => {
-            if (response.ok) {
-                closeAddModal();
-                location.reload();
-            } else {
-                alert('Failed to add record.');
-            }
-        });
+        fetch('/add_record', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (response.ok) {
+                    closeAddModal();
+                    location.reload();
+                } else {
+                    alert('Failed to add record.');
+                }
+            });
+    }
 }
 // Close modal when clicking outside
 document.getElementById('addModal').addEventListener('click', function (e) {
@@ -241,6 +262,25 @@ loadNotifications();
 let selectedPhotoFile = null;
 // Store the active camera stream to manage camera lifecycle
 let cameraStream = null;
+let currentMode = 'manual';
+
+function switchMode(mode) {
+    currentMode = mode;
+
+    if (mode === 'manual') {
+        document.getElementById('addForm').style.display = 'block';
+        document.getElementById('aiMode').style.display = 'none';
+        document.getElementById('manualBtn').classList.add('active');
+        document.getElementById('aiBtn').classList.remove('active');
+        removePhoto();
+        closeCamera();
+    } else {
+        document.getElementById('addForm').style.display = 'none';
+        document.getElementById('aiMode').style.display = 'block';
+        document.getElementById('manualBtn').classList.remove('active');
+        document.getElementById('aiBtn').classList.add('active');
+    }
+}
 
 // Trigger the hidden file input when upload button is clicked
 function openFileUpload() {
@@ -277,13 +317,13 @@ function removePhoto() {
 }
 
 // Request camera access and display the live video stream
+
+
 async function openCamera() {
     try {
-        // Request rear-facing camera with getUserMedia API
         cameraStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' }
         });
-
         // Display the camera stream in the video element
         const video = document.getElementById('cameraStream');
         video.srcObject = cameraStream;
@@ -291,7 +331,7 @@ async function openCamera() {
         document.getElementById('cameraControls').style.display = 'flex';
 
         // Hide upload options while camera is active
-        document.querySelector('.upload-options').style.display = 'none';
+        document.querySelector('.ai-upload-container').style.display = 'none';
     } catch (error) {
         alert('Camera access denied or unavailable');
     }
@@ -308,7 +348,7 @@ function closeCamera() {
     // Hide camera UI and restore upload options
     document.getElementById('cameraStream').style.display = 'none';
     document.getElementById('cameraControls').style.display = 'none';
-    document.querySelector('.upload-options').style.display = 'flex';
+    document.querySelector('.ai-upload-container').style.display = 'flex';
 }
 
 // Capture the current video frame as a photo

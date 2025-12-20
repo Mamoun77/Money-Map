@@ -515,38 +515,6 @@ body {
 }
 
 
-.photo-upload-section {
-    margin-bottom: 20px;
-    padding: 15px;
-    border: 2px dashed var(--border-color);
-    border-radius: 8px;
-    background: var(--modal-bg);
-}
-
-.upload-options {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.btn-photo-option {
-    flex: 1;
-    padding: 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-photo-option:hover {
-    background: #059669;
-    color: white;
-    border-color: #059669;
-}
-
 .photo-preview {
     position: relative;
     margin-top: 15px;
@@ -622,4 +590,63 @@ body {
 
 .btn-cancel-camera:hover {
     background: #d4d4d4;
+}
+
+.mode-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 25px;
+    background: var(--border-color);
+    border-radius: 8px;
+    padding: 4px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.mode-btn.active {
+    background: #059669;
+    color: white;
+}
+
+.mode-btn:hover:not(.active) {
+    background: rgba(5, 150, 105, 0.1);
+}
+
+.ai-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 40px 20px;
+    align-items: center;
+}
+
+.btn-ai-photo {
+    width: 100%;
+    max-width: 300px;
+    padding: 20px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-ai-photo:hover {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+    transform: translateY(-2px);
 }

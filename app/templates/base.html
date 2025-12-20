@@ -63,46 +63,27 @@
                 <button class="close-btn" onclick="closeAddModal()">&times;</button>
             </div>
             <div class="modal-body">
-                <form id="addForm">
+                <!-- Mode Toggle -->
+                <div class="mode-toggle">
+                    <button type="button" class="mode-btn active" id="manualBtn" onclick="switchMode('manual')">
+                        Manual
+                    </button>
+                    <button type="button" class="mode-btn" id="aiBtn" onclick="switchMode('ai')">
+                        AI Addition
+                    </button>
+                </div>
 
-                    <div class="photo-upload-section">
-                        <div class="upload-options">
-                            <button type="button" class="btn-photo-option" onclick="openCamera()">
-                                📷 Take Photo
-                            </button>
-                            <button type="button" class="btn-photo-option" onclick="openFileUpload()">
-                                🖼️ Upload Photo
-                            </button>
-                        </div>
-
-                        <input type="file" id="photoInput" accept="image/*" style="display: none;"
-                            onchange="handlePhotoUpload(event)">
-
-                        <div id="photoPreview" class="photo-preview" style="display: none;">
-                            <img id="previewImage" src="" alt="Preview">
-                            <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
-                        </div>
-
-                        <video id="cameraStream" autoplay playsinline style="display: none;"></video>
-                        <canvas id="photoCanvas" style="display: none;"></canvas>
-
-                        <div id="cameraControls" style="display: none;">
-                            <button type="button" class="btn-capture" onclick="capturePhoto()">📸 Capture</button>
-                            <button type="button" class="btn-cancel-camera" onclick="closeCamera()">Cancel</button>
-                        </div>
-                    </div>
-
-
-
+                <!-- Manual Mode -->
+                <form id="addForm" style="display: block;">
                     <div class="form-group">
                         <label for="addDescription">Description</label>
-                        <textarea id="addDescription" required></textarea>
+                        <textarea id="addDescription"></textarea>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="addType">Type</label>
-                            <select id="addType" required>
+                            <select id="addType">
                                 <option value="expense">Expense</option>
                                 <option value="income">Income</option>
                             </select>
@@ -110,14 +91,14 @@
 
                         <div class="form-group">
                             <label for="addAmount">Amount</label>
-                            <input type="number" id="addAmount" step="0.01" required>
+                            <input type="number" id="addAmount" step="0.01">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label for="addCategory">Category</label>
-                            <select id="addCategory" required>
+                            <select id="addCategory">
                                 {% for category in categories %}
                                 <option value="{{ category.id }}">{{ category.name }}</option>
                                 {% endfor %}
@@ -126,7 +107,7 @@
 
                         <div class="form-group">
                             <label for="addAccount">Account</label>
-                            <select id="addAccount" required>
+                            <select id="addAccount">
                                 {% for account in accounts %}
                                 <option value="{{ account.id }}">{{ account.name }}</option>
                                 {% endfor %}
@@ -137,15 +118,43 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="addDate">Date</label>
-                            <input type="date" id="addDate" required>
+                            <input type="date" id="addDate">
                         </div>
 
                         <div class="form-group">
                             <label for="addTime">Time</label>
-                            <input type="time" id="addTime" required>
+                            <input type="time" id="addTime">
                         </div>
                     </div>
                 </form>
+
+                <!-- AI Mode -->
+                <div id="aiMode" style="display: none;">
+                    <div class="ai-upload-container">
+                        <button type="button" class="btn-ai-photo" onclick="openCamera()">
+                            📷 Take Photo
+                        </button>
+                        <button type="button" class="btn-ai-photo" onclick="openFileUpload()">
+                            🖼️ Upload Photo
+                        </button>
+                    </div>
+
+                    <input type="file" id="photoInput" accept="image/*" style="display: none;"
+                        onchange="handlePhotoUpload(event)">
+
+                    <div id="photoPreview" class="photo-preview" style="display: none;">
+                        <img id="previewImage" src="" alt="Preview">
+                        <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
+                    </div>
+
+                    <video id="cameraStream" autoplay playsinline style="display: none;"></video>
+                    <canvas id="photoCanvas" style="display: none;"></canvas>
+
+                    <div id="cameraControls" style="display: none;">
+                        <button type="button" class="btn-capture" onclick="capturePhoto()">📸 Capture</button>
+                        <button type="button" class="btn-cancel-camera" onclick="closeCamera()">Cancel</button>
+                    </div>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
