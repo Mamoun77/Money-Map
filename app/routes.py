@@ -441,17 +441,24 @@ def check_spending_limits(user_id):
 @app.route('/add_record', methods=['POST'])
 @login_required
 def add_record():
-    data = request.get_json()
-
+    # Check if photo is included
+    if 'photo' in request.files:
+        photo = request.files['photo']
+        if photo.filename != '':
+            # TODO: Process photo here
+            # For now, just acknowledge it exists
+            pass
+    
+    # Get form data (now from FormData instead of JSON)
     new_record = Records(
         user_id=current_user.id,
-        account_id=int(data.get('account')),
-        amount=data.get('amount'),
-        category_id=int(data.get('category')),
-        type=data.get('type'),
-        date=data.get('date'),
-        time=data.get('time'),
-        description=data.get('description')
+        account_id=int(request.form.get('account')),
+        amount=request.form.get('amount'),
+        category_id=int(request.form.get('category')),
+        type=request.form.get('type'),
+        date=request.form.get('date'),
+        time=request.form.get('time'),
+        description=request.form.get('description')
     )
 
     db.session.add(new_record)
@@ -460,6 +467,12 @@ def add_record():
     check_spending_limits(current_user.id)
 
     return '', 204  # No Content returned, just that the addition was successful
+
+@app.route('/process_receipt_photo', methods=['POST'])
+@login_required
+def process_receipt_photo():
+    # TODO: Implement photo processing logic
+    return jsonify({'success': True, 'message': 'Photo processing not implemented yet'}), 200
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 @login_required

@@ -64,6 +64,36 @@
             </div>
             <div class="modal-body">
                 <form id="addForm">
+
+                    <div class="photo-upload-section">
+                        <div class="upload-options">
+                            <button type="button" class="btn-photo-option" onclick="openCamera()">
+                                📷 Take Photo
+                            </button>
+                            <button type="button" class="btn-photo-option" onclick="openFileUpload()">
+                                🖼️ Upload Photo
+                            </button>
+                        </div>
+
+                        <input type="file" id="photoInput" accept="image/*" style="display: none;"
+                            onchange="handlePhotoUpload(event)">
+
+                        <div id="photoPreview" class="photo-preview" style="display: none;">
+                            <img id="previewImage" src="" alt="Preview">
+                            <button type="button" class="btn-remove-photo" onclick="removePhoto()">✕</button>
+                        </div>
+
+                        <video id="cameraStream" autoplay playsinline style="display: none;"></video>
+                        <canvas id="photoCanvas" style="display: none;"></canvas>
+
+                        <div id="cameraControls" style="display: none;">
+                            <button type="button" class="btn-capture" onclick="capturePhoto()">📸 Capture</button>
+                            <button type="button" class="btn-cancel-camera" onclick="closeCamera()">Cancel</button>
+                        </div>
+                    </div>
+
+
+
                     <div class="form-group">
                         <label for="addDescription">Description</label>
                         <textarea id="addDescription" required></textarea>

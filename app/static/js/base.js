@@ -36,47 +36,46 @@ function addRecord() {
 // Close add record modal
 function closeAddModal() {
     document.getElementById('addModal').classList.remove('active');
+    removePhoto();
+    closeCamera();
 }
 
 // Save new record
 function saveNewRecord() {
-    // Get form values
     const description = document.getElementById('addDescription').value.trim();
     const amount = document.getElementById('addAmount').value;
 
-    // Validate required fields
     if (!description || !amount) {
         alert('Please fill in all required fields.');
         return;
     }
 
-    const formData = {
-        description: description,
-        type: document.getElementById('addType').value,
-        amount: parseFloat(amount),
-        category: document.getElementById('addCategory').value,
-        account: document.getElementById('addAccount').value,
-        date: document.getElementById('addDate').value,
-        time: document.getElementById('addTime').value
-    };
+    const formData = new FormData();
+    formData.append('description', description);
+    formData.append('type', document.getElementById('addType').value);
+    formData.append('amount', parseFloat(amount));
+    formData.append('category', document.getElementById('addCategory').value);
+    formData.append('account', document.getElementById('addAccount').value);
+    formData.append('date', document.getElementById('addDate').value);
+    formData.append('time', document.getElementById('addTime').value);
+
+    if (selectedPhotoFile) {
+        formData.append('photo', selectedPhotoFile);
+    }
 
     fetch('/add_record', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+        body: formData
     })
         .then(response => {
             if (response.ok) {
                 closeAddModal();
                 location.reload();
             } else {
-                alert('Failed to update the record.');
+                alert('Failed to add record.');
             }
         });
 }
-
 // Close modal when clicking outside
 document.getElementById('addModal').addEventListener('click', function (e) {
     if (e.target === this) {
@@ -236,3 +235,98 @@ document.addEventListener('click', function (event) {
 
 // Load notifications on page load (for badge count)
 loadNotifications();
+
+
+// Store the selected photo file (from upload or camera capture)
+let selectedPhotoFile = null;
+// Store the active camera stream to manage camera lifecycle
+let cameraStream = null;
+
+// Trigger the hidden file input when upload button is clicked
+function openFileUpload() {
+    document.getElementById('photoInput').click();
+}
+
+// Handle file selection from the file input
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    // Verify the file is an image before processing
+    if (file && file.type.startsWith('image/')) {
+        selectedPhotoFile = file;
+        displayPhotoPreview(file);
+    }
+}
+
+// Display the selected/captured photo in the preview area
+function displayPhotoPreview(file) {
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        // Set the preview image source to the file data URL
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('photoPreview').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+// Clear the selected photo and hide the preview
+function removePhoto() {
+    selectedPhotoFile = null;
+    document.getElementById('photoPreview').style.display = 'none';
+    // Reset the file input value to allow re-uploading the same file
+    document.getElementById('photoInput').value = '';
+}
+
+// Request camera access and display the live video stream
+async function openCamera() {
+    try {
+        // Request rear-facing camera with getUserMedia API
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' }
+        });
+
+        // Display the camera stream in the video element
+        const video = document.getElementById('cameraStream');
+        video.srcObject = cameraStream;
+        video.style.display = 'block';
+        document.getElementById('cameraControls').style.display = 'flex';
+
+        // Hide upload options while camera is active
+        document.querySelector('.upload-options').style.display = 'none';
+    } catch (error) {
+        alert('Camera access denied or unavailable');
+    }
+}
+
+// Stop the camera stream and reset the UI
+function closeCamera() {
+    if (cameraStream) {
+        // Stop all tracks to release camera resources
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+
+    // Hide camera UI and restore upload options
+    document.getElementById('cameraStream').style.display = 'none';
+    document.getElementById('cameraControls').style.display = 'none';
+    document.querySelector('.upload-options').style.display = 'flex';
+}
+
+// Capture the current video frame as a photo
+function capturePhoto() {
+    const video = document.getElementById('cameraStream');
+    const canvas = document.getElementById('photoCanvas');
+    const context = canvas.getContext('2d');
+
+    // Set canvas dimensions to match video resolution
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    // Draw the current video frame onto the canvas
+    context.drawImage(video, 0, 0);
+
+    // Convert canvas to a Blob and create a File object
+    canvas.toBlob(blob => {
+        selectedPhotoFile = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+        displayPhotoPreview(selectedPhotoFile);
+        closeCamera();
+    }, 'image/jpeg');
+}
