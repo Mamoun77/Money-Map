@@ -1,10 +1,10 @@
-from app.ai_integrations.conversational_ai_agent.agent import initialize_agent, invoke_agent
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from sqlalchemy import func
+import tempfile
 from dotenv import load_dotenv
 import os
 
@@ -14,9 +14,10 @@ from email.mime.text import MIMEText # For sending emails to the user
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 
-# for adding a record from an image via AI agent
+# for AI integrations
+from app.ai_integrations.conversational_ai_agent.agent import initialize_agent, invoke_agent
 from app.ai_integrations.add_record_agent.agent import parse_financial_record
-# from ai_integrations.ocr.
+from app.ai_integrations.ocr.ocr import extract_text
 
 
 # Store verification codes temporarily for multiple users
@@ -87,9 +88,15 @@ class Notification(db.Model):
 def rendering_records_accounts_categories(): # For fetching records, accounts, and categories from the database for the current user
     records = db.session.query(Records, Accounts, Categories)\
         .join(Accounts, Records.account_id == Accounts.id)\
-        .join(Categories, Records.category_id == Categories.id)\
+        .outerjoin(Categories, Records.category_id == Categories.id)\
         .filter(Records.user_id == current_user.id)\
         .all()
+    
+    # records_list = []
+    # for expense, account, category in records:
+    #     print(f"Processing record {expense.id}: category={category.name if category else 'None'}")
+    #     records_list.append({...})
+    # print(f"Total records for user: {Records.query.filter_by(user_id=current_user.id).count()}")
     
     accounts = Accounts.query.filter_by(user_id=current_user.id).all()
     categories = Categories.query.filter_by(user_id=current_user.id).all()
@@ -104,9 +111,19 @@ def rendering_records_accounts_categories(): # For fetching records, accounts, a
             'type': expense.type,
             'date': expense.date,
             'time': expense.time,
-            'category': category.name,
+            'category': category.name if category else 'Uncategorized',
             'account': account.name
         })
+
+    # Check for records with invalid category_id
+    orphaned = db.session.query(Records).outerjoin(
+        Categories, Records.category_id == Categories.id
+    ).filter(Categories.id == None, Records.category_id != None).all()
+
+    print(f"Found {len(orphaned)} records with invalid category_id")
+    for r in orphaned:
+        print(f"Record {r.id}: category_id={r.category_id} (doesn't exist)")
+
     return records_list, accounts, categories
 
 login_manager = LoginManager(app)
@@ -446,15 +463,92 @@ def check_spending_limits(user_id):
 @app.route('/add_record', methods=['POST'])
 @login_required
 def add_record():
-    # Check if photo is included
+    # Check if photo is included (AI mode)
     if 'photo' in request.files:
         photo = request.files['photo']
-        print(f"type of photo: {type(photo)}")
+        if photo.filename != '':
+
+            # Save photo temporarily
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as tmp_file:
+                photo.save(tmp_file.name)
+                tmp_path = tmp_file.name
             
-        # parse_financial_record()
-        pass
+            try:
+                # Extract text from image
+                ocr_text = extract_text(tmp_path)
+                print(f"OCR Text: {ocr_text[:200]}")  # Print first 200 chars
+                
+                # Get user's accounts and categories
+                accounts = [acc.name for acc in Accounts.query.filter_by(user_id=current_user.id).all()]
+                categories = [cat.name for cat in Categories.query.filter_by(user_id=current_user.id).all()]
+                print(f"Accounts: {accounts}")
+                print(f"Categories: {categories}")
+                
+                # Get current datetime
+                current_datetime = datetime.now().strftime('%Y-%m-%d %H:%M')
+                
+                # Parse with AI
+                parsed_data = parse_financial_record(ocr_text, accounts, categories, current_datetime)
+                print(f"Parsed data: {parsed_data}")
+                
+                # Check if valid
+                if parsed_data['valid_input'] == 'not_valid':
+                    print("Invalid input detected")
+                    os.unlink(tmp_path)
+                    return jsonify({'error': 'Invalid receipt image'}), 400
+                
+                # Find account and category IDs
+                accounts_query = Accounts.query.filter_by(user_id=current_user.id).all()
+                categories_query = Categories.query.filter_by(user_id=current_user.id).all()
+                
+                account = Accounts.query.filter_by(user_id=current_user.id, name=parsed_data['account']).first()
+                category = Categories.query.filter_by(user_id=current_user.id, name=parsed_data['category']).first()
+                
+                print(f"Account found: {account}")
+                print(f"Category found: {category}")
+
+                # Add after "Category found" print
+                print(f"Category ID in parsed_data would be: {category.id if category else 'None'}")
+                print(f"Category name match: parsed='{parsed_data['category']}' vs found='{category.name if category else 'None'}'")
+                
+                # Create record
+                new_record = Records(
+                    user_id=current_user.id,
+                    account_id=account.id if account else accounts_query[0].id,
+                    amount=parsed_data['amount'],
+                    category_id=category.id if category else None,
+                    type=parsed_data['type'].lower(),
+                    date=parsed_data['date'],
+                    time=parsed_data['time'],
+                    description=parsed_data['description']
+                )
+                
+                print(f"New record created: {new_record}")
+                
+                db.session.add(new_record)
+                db.session.commit()
+                print("Record committed to database")
+
+                # Add after "Record committed to database"
+                verify_record = Records.query.get(new_record.id)
+                print(f"Verified record - user_id: {verify_record.user_id}, category_id: {verify_record.category_id}, type: {verify_record.type}")
+
+                print("------------------------------------------------")
+                print("All done")
+                print("------------------------------------------------")
+
+                print(f"Record ID: {new_record.id}")
+                print(f"Record in DB: {Records.query.get(new_record.id)}")
+                
+                check_spending_limits(current_user.id)
+                
+            finally:
+                # Clean up temp file
+                os.unlink(tmp_path)
+            
+            return '', 204
     
-    # Get form data (now from FormData instead of JSON)
+    # Manual mode - form data provided
     new_record = Records(
         user_id=current_user.id,
         account_id=int(request.form.get('account')),
@@ -471,7 +565,7 @@ def add_record():
 
     check_spending_limits(current_user.id)
 
-    return '', 204  # No Content returned, just that the addition was successful
+    return '', 204 # No Content returned, just that the addition was successful
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 @login_required
@@ -489,16 +583,21 @@ def update_record(record_id):
     data = request.get_json()
 
     record = Records.query.get(data.get('id'))
+    
+    # Convert account name to ID
+    account = Accounts.query.filter_by(user_id=current_user.id, name=data.get('account')).first()
+    # Convert category name to ID
+    category = Categories.query.filter_by(user_id=current_user.id, name=data.get('category')).first()
 
-    record.account_id = data.get('account')
+    record.account_id = account.id if account else record.account_id
     record.amount = data.get('amount')
-    record.category_id = data.get('category')
+    record.category_id = category.id if category else record.category_id
     record.type = data.get('type')
     record.date = data.get('date')
     record.time = data.get('time')
     record.description = data.get('description')
     
-    db.session.commit() # Update record in database with data
+    db.session.commit()
     
     return '', 204
 
