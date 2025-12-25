@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, timedelta, datetime
-from sqlalchemy import func
 import tempfile
 from dotenv import load_dotenv
 import os
@@ -12,12 +12,17 @@ import random
 import smtplib 
 from email.mime.text import MIMEText # For sending emails to the user
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime, timedelta
 
 # for AI integrations
 from app.ai_integrations.conversational_ai_agent.agent import initialize_agent, invoke_agent
-from app.ai_integrations.add_record_agent.agent import parse_financial_record
 from app.ai_integrations.ocr.ocr import extract_text
+from app.ai_integrations.add_record_agent.agent import parse_financial_record
+
+
+# for records exportation
+from flask import send_file
+import pandas as pd
+from io import BytesIO
 
 
 # Store verification codes temporarily for multiple users
@@ -863,6 +868,50 @@ def mark_all_notifications_read():
     Notification.query.filter_by(user_id=current_user.id, is_read=False).update({Notification.is_read: True}) # mark all unread notifications as read
     db.session.commit()
     return '', 204
+
+@app.route('/export/csv')
+@login_required
+def export_csv():
+    # Fetch all records for current user
+    records_query = db.session.query(
+        Records,
+        Categories.name.label('category_name'),
+        Accounts.name.label('account_name')
+    ).outerjoin(
+        Categories, Records.category_id == Categories.id
+    ).join(
+        Accounts, Records.account_id == Accounts.id
+    ).filter(
+        Records.user_id == current_user.id
+    ).order_by(Records.date.desc(), Records.time.desc()).all() # Order by date and time descending
+    
+    # Prepare data for CSV
+    data = []
+    for record, category_name, account_name in records_query:
+        data.append({
+            'Date': record.date.strftime('%Y-%m-%d'),
+            'Time': record.time.strftime('%H:%M:%S'),
+            'Description': record.description,
+            'Type': record.type.capitalize(),
+            'Amount': float(record.amount),
+            'Category': category_name if category_name else 'Uncategorized',
+            'Account': account_name
+        })
+    
+    # Create DataFrame and CSV
+    df = pd.DataFrame(data)
+    
+    # Create BytesIO object
+    output = BytesIO()
+    df.to_csv(output, index=False)
+    output.seek(0)
+    
+    return send_file(
+        output,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'money_map_records_{datetime.now().strftime("%Y%m%d")}.csv' # file name with current date
+    )
 
 
 app.run(debug=True)

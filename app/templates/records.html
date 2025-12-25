@@ -94,6 +94,13 @@
                 <div class="records-count">
                     Showing <span id="recordCount">{{ records|length }}</span> records
                 </div>
+
+                <div class="export-buttons">
+                    <button class="export-btn csv-btn" onclick="exportCSV()">
+                        📊 Export CSV
+                    </button>
+                </div>
+
             </div>
 
             <div class="records-list" id="recordsList">
@@ -430,6 +437,10 @@
 
             applyFilters();
         });
+
+        function exportCSV() {
+            window.location.href = '/export/csv';
+        }
     </script>
 </body>
 
