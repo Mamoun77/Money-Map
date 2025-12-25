@@ -559,6 +559,7 @@ def add_record():
                 print(f"Record in DB: {Records.query.get(new_record.id)}")
                 
                 check_spending_limits(current_user.id)
+                check_goal_achievements(current_user.id)
                 
             finally:
                 # Clean up temp file
@@ -582,6 +583,7 @@ def add_record():
     db.session.commit()
 
     check_spending_limits(current_user.id)
+    check_goal_achievements(current_user.id)
 
     return '', 204 # No Content returned, just that the addition was successful
 
@@ -616,6 +618,8 @@ def update_record(record_id):
     record.description = data.get('description')
     
     db.session.commit()
+
+    check_goal_achievements(current_user.id)
     
     return '', 204
 
@@ -1048,5 +1052,55 @@ def get_accounts():
     accounts = Accounts.query.filter_by(user_id=current_user.id).all()
     accounts_list = [{'id': acc.id, 'name': acc.name, 'icon': acc.icon} for acc in accounts]
     return jsonify(accounts_list)
+
+def check_goal_achievements(user_id):
+    """Check if any goals have been achieved and create notifications"""
+    
+    # Get user settings to check if notifications are enabled
+    settings = UserSettings.query.filter_by(user_id=user_id).first()
+    if not settings or not settings.notification_enabled:
+        return
+    
+    goals = FinancialGoal.query.filter_by(user_id=user_id, is_active=True).all()
+    
+    for goal in goals:
+        account_ids = [int(x) for x in goal.account_ids.split(',')]
+        
+        # Calculate current savings
+        income = db.session.query(func.sum(Records.amount))\
+            .filter(Records.user_id == user_id,
+                   Records.type == 'income',
+                   Records.account_id.in_(account_ids),
+                   Records.date >= goal.start_date,
+                   Records.date <= goal.end_date)\
+            .scalar() or 0
+        
+        expenses = db.session.query(func.sum(Records.amount))\
+            .filter(Records.user_id == user_id,
+                   Records.type == 'expense',
+                   Records.account_id.in_(account_ids),
+                   Records.date >= goal.start_date,
+                   Records.date <= goal.end_date)\
+            .scalar() or 0
+        
+        current_savings = float(income) - float(expenses)
+        
+        # Check if goal is achieved
+        if current_savings >= float(goal.target_amount):
+            # Check if notification already exists for this goal
+            existing = Notification.query.filter(
+                Notification.user_id == user_id,
+                Notification.title == f'Goal Achieved: {goal.goal_name}'
+            ).first()
+            
+            if not existing:
+                notif = Notification(
+                    user_id=user_id,
+                    title=f'Goal Achieved: {goal.goal_name}',
+                    message=f'Congratulations! You\'ve reached your savings goal of ${float(goal.target_amount):.2f}. Current savings: ${current_savings:.2f}'
+                )
+                db.session.add(notif)
+    
+    db.session.commit()
 
 app.run(debug=True)
