@@ -90,6 +90,19 @@ class Notification(db.Model):
     is_read = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+class FinancialGoal(db.Model):
+    __tablename__ = 'financial_goals'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    goal_name = db.Column(db.String(100), nullable=False)
+    target_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    time_period = db.Column(db.Enum('week', 'month', 'year'), nullable=False)
+    account_ids = db.Column(db.Text, nullable=False)  # Comma-separated
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 def rendering_records_accounts_categories(): # For fetching records, accounts, and categories from the database for the current user
     records = db.session.query(Records, Accounts, Categories)\
         .join(Accounts, Records.account_id == Accounts.id)\
@@ -622,14 +635,15 @@ def settings():
 
     records_list, accounts, categories = rendering_records_accounts_categories()
 
-    
+    accounts_list = [{'id': acc.id, 'name': acc.name, 'icon': acc.icon, 'balance': float(acc.balance)} for acc in accounts]
+
     return render_template('settings.html',
                          currency=user_settings.currency,
                          language=user_settings.language,
                          notifications=user_settings.notification_enabled,
                          username=current_user.username,
                          records=records_list,
-                         accounts=accounts,
+                         accounts=accounts_list,
                          categories=categories)
 
 @app.route('/save_settings', methods=['POST'])
@@ -913,5 +927,126 @@ def export_csv():
         download_name=f'money_map_records_{datetime.now().strftime("%Y%m%d")}.csv' # file name with current date
     )
 
+
+# Financial Goals routes
+@app.route('/settings/goals', methods=['GET'])
+@login_required
+def get_goals():
+    goals = FinancialGoal.query.filter_by(user_id=current_user.id, is_active=True).all()
+    
+    goals_list = [] # the list that will be passed to the front end
+    for goal in goals:
+        # Calculate progress
+        account_ids = [int(x) for x in goal.account_ids.split(',')]
+
+        # Calculate income and expenses for selected accounts in the time range of the gaol
+        income = db.session.query(func.sum(Records.amount))\
+            .filter(Records.user_id == current_user.id,
+                   Records.type == 'income',
+                   Records.account_id.in_(account_ids),
+                   Records.date >= goal.start_date, # in the time range of the goal
+                   Records.date <= goal.end_date).scalar() or 0
+        
+        expenses = db.session.query(func.sum(Records.amount))\
+            .filter(Records.user_id == current_user.id,
+                   Records.type == 'expense',
+                   Records.account_id.in_(account_ids),
+                   Records.date >= goal.start_date,
+                   Records.date <= goal.end_date)\
+            .scalar() or 0
+        
+        current_savings = float(income) - float(expenses)
+        progress = (current_savings / float(goal.target_amount) * 100) if goal.target_amount > 0 else 0
+        
+        # Get account names
+        accounts = Accounts.query.filter(Accounts.id.in_(account_ids)).all()
+        account_names = [acc.name for acc in accounts]
+        
+        goals_list.append({
+            'id': goal.id,
+            'goal_name': goal.goal_name,
+            'target_amount': float(goal.target_amount),
+            'current_savings': current_savings,
+            'progress': min(progress, 100),
+            'time_period': goal.time_period,
+            'account_names': account_names,
+            'account_ids': goal.account_ids,
+            'start_date': goal.start_date.strftime('%Y-%m-%d'),
+            'end_date': goal.end_date.strftime('%Y-%m-%d')
+        })
+    
+    return jsonify(goals_list)
+
+@app.route('/settings/add_goal', methods=['POST'])
+@login_required
+def add_goal():
+    data = request.get_json()
+    
+    # Calculate dates based on time period
+    start_date = date.today()
+    time_period = data.get('time_period')
+    
+    if time_period == 'week':
+        end_date = start_date + timedelta(days=7)
+    elif time_period == 'month':
+        end_date = start_date + timedelta(days=30)
+    else:  # year
+        end_date = start_date + timedelta(days=365)
+    
+    new_goal = FinancialGoal(
+        user_id=current_user.id,
+        goal_name=data.get('goal_name'),
+        target_amount=data.get('target_amount'),
+        time_period=time_period,
+        account_ids=','.join(map(str, data.get('account_ids'))),
+        start_date=start_date,
+        end_date=end_date
+    )
+    
+    db.session.add(new_goal)
+    db.session.commit()
+    
+    return '', 204
+
+@app.route('/settings/delete_goal/<int:goal_id>', methods=['POST'])
+@login_required
+def delete_goal(goal_id):
+    goal = FinancialGoal.query.get(goal_id)
+    if goal and goal.user_id == current_user.id:
+        goal.is_active = False
+        db.session.commit()
+    return '', 204
+
+@app.route('/settings/edit_goal/<int:goal_id>', methods=['POST'])
+@login_required
+def edit_goal(goal_id):
+    data = request.get_json()
+    goal = FinancialGoal.query.get(goal_id)
+    
+    if goal and goal.user_id == current_user.id:
+        goal.goal_name = data.get('goal_name')
+        goal.target_amount = data.get('target_amount')
+        goal.account_ids = ','.join(map(str, data.get('account_ids')))
+        
+        # Recalculate end date if time period changed
+        if data.get('time_period') != goal.time_period:
+            goal.time_period = data.get('time_period')
+            if goal.time_period == 'week':
+                goal.end_date = goal.start_date + timedelta(days=7)
+            elif goal.time_period == 'month':
+                goal.end_date = goal.start_date + timedelta(days=30)
+            else:
+                goal.end_date = goal.start_date + timedelta(days=365)
+        
+        db.session.commit()
+    
+    return '', 204
+
+@app.route('/settings/accounts', methods=['GET']) # for getting the accoutns for the goal section
+@login_required
+def get_accounts():
+    accounts = Accounts.query.filter_by(user_id=current_user.id).all()
+    accounts_list = [{'id': acc.id, 'name': acc.name, 'icon': acc.icon} for acc in accounts]
+    return jsonify(accounts_list)
 
 app.run(debug=True)

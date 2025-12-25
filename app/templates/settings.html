@@ -21,6 +21,12 @@
                 <span class="sidebar-icon">⚙️</span>
                 <span class="sidebar-text">General</span>
             </div>
+
+            <div class="sidebar-item" data-section="goals">
+                <span class="sidebar-icon">🎯</span>
+                <span class="sidebar-text">Goals</span>
+            </div>
+
             <div class="sidebar-item" data-section="categories">
                 <span class="sidebar-icon">📁</span>
                 <span class="sidebar-text">Categories</span>
@@ -153,6 +159,24 @@
                 </div>
             </div>
 
+            <!-- Goals Section -->
+            <div class="settings-content" id="goals-section">
+                <div class="settings-header">
+                    <h1>Financial Goals</h1>
+                    <p>Track your savings goals and monitor progress</p>
+                </div>
+
+                <div class="settings-section">
+                    <button type="button" class="btn-add-category" id="addGoalBtn">
+                        <span>+</span> Add Goal
+                    </button>
+
+                    <div class="goals-list" id="goalsList">
+                        <!-- Goals will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Categories Section -->
             <div class="settings-content" id="categories-section">
                 <div class="settings-header">
@@ -192,6 +216,43 @@
         </div>
     </div>
 
+    <!-- Goal Modal -->
+    <div id="goalModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="goalModalClose">&times;</span>
+            <h2 id="goalModalTitle">Add Financial Goal</h2>
+            <form id="goalForm">
+                <input type="hidden" id="goalId">
+                <div class="form-group">
+                    <label for="goalName">Goal Name</label>
+                    <input type="text" id="goalName" required maxlength="100" placeholder="e.g., Emergency Fund">
+                </div>
+                <div class="form-group">
+                    <label for="targetAmount">Target Amount</label>
+                    <input type="number" id="targetAmount" step="0.01" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="timePeriod">Time Period</label>
+                    <select id="timePeriod" required>
+                        <option value="week">Next Week</option>
+                        <option value="month">Next Month</option>
+                        <option value="year">Next Year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Select Accounts to Track</label>
+                    <div id="accountCheckboxes" class="checkbox-group">
+                        <!-- Account checkboxes will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-save">Save</button>
+                    <button type="button" class="btn-cancel" id="goalModalCancelBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // General Settings Form
@@ -205,7 +266,6 @@
                     const notificationsCheckbox = document.getElementById('notifications');
                     formData.set('notifications', notificationsCheckbox.checked ? 'on' : 'off');
 
-                    // Only include password if it's not empty
                     const password = document.getElementById('password').value;
                     if (!password) {
                         formData.delete('password');
@@ -218,12 +278,8 @@
                         .then(response => {
                             if (response.ok) {
                                 successMessage.classList.add('show');
-                                setTimeout(() => {
-                                    successMessage.classList.remove('show');
-                                }, 3000);
-                                setTimeout(() => {
-                                    window.location.href = '/home';
-                                }, 500);
+                                setTimeout(() => successMessage.classList.remove('show'), 3000);
+                                setTimeout(() => window.location.href = '/home', 500);
                             } else {
                                 alert('Error saving settings. Please try again.');
                             }
@@ -237,9 +293,7 @@
                 const toggleInput = document.getElementById('notifications');
                 toggleInput.addEventListener('change', function () {
                     this.parentElement.classList.add('toggle-active');
-                    setTimeout(() => {
-                        this.parentElement.classList.remove('toggle-active');
-                    }, 300);
+                    setTimeout(() => this.parentElement.classList.remove('toggle-active'), 300);
                 });
             }
 
@@ -274,27 +328,17 @@
                 modal.style.display = 'block';
             });
 
-            modalClose.addEventListener('click', function () {
-                modal.style.display = 'none';
-            });
-
-            modalCancelBtn.addEventListener('click', function () {
-                modal.style.display = 'none';
-            });
+            modalClose.addEventListener('click', () => modal.style.display = 'none');
+            modalCancelBtn.addEventListener('click', () => modal.style.display = 'none');
 
             window.addEventListener('click', function (e) {
-                if (e.target == modal) {
-                    modal.style.display = 'none';
-                }
+                if (e.target === modal) modal.style.display = 'none';
             });
 
             categoryForm.addEventListener('submit', function (e) {
                 e.preventDefault();
                 const categoryId = document.getElementById('categoryId').value;
-                const formData = {
-                    name: document.getElementById('categoryName').value
-                };
-
+                const formData = { name: document.getElementById('categoryName').value };
                 const url = categoryId ? `/settings/edit_category/${categoryId}` : '/settings/add_category';
 
                 fetch(url, {
@@ -306,9 +350,7 @@
                         if (response.ok) {
                             modal.style.display = 'none';
                             loadCategories();
-                        } else {
-                            alert('Error saving category');
-                        }
+                        } else alert('Error saving category');
                     })
                     .catch(error => {
                         console.error('Error:', error);
@@ -318,7 +360,7 @@
 
             function loadCategories() {
                 fetch('/settings/categories')
-                    .then(response => response.json())
+                    .then(r => r.json())
                     .then(categories => {
                         const list = document.getElementById('categoriesList');
                         list.innerHTML = '';
@@ -327,54 +369,250 @@
                             const item = document.createElement('div');
                             item.className = 'category-item';
                             item.innerHTML = `
-                                <div class="category-info">
-                                    <span class="category-name">${cat.name}</span>
-                                </div>
-                                <div class="category-actions">
-                                    <button class="btn-edit" data-id="${cat.id}" data-name="${cat.name}">Edit</button>
-                                    <button class="btn-delete" data-id="${cat.id}">Delete</button>
-                                </div>
-                            `;
+                            <div class="category-info">
+                                <span class="category-name">${cat.name}</span>
+                            </div>
+                            <div class="category-actions">
+                                <button class="btn-edit" data-id="${cat.id}" data-name="${cat.name}">Edit</button>
+                                <button class="btn-delete" data-id="${cat.id}">Delete</button>
+                            </div>
+                        `;
                             list.appendChild(item);
                         });
-
-                        document.querySelectorAll('.btn-edit').forEach(btn => {
-                            btn.addEventListener('click', function () {
-                                modalTitle.textContent = 'Edit Category';
-                                document.getElementById('categoryId').value = this.dataset.id;
-                                document.getElementById('categoryName').value = this.dataset.name;
-                                modal.style.display = 'block';
-                            });
-                        });
-
-                        document.querySelectorAll('.btn-delete').forEach(btn => {
-                            btn.addEventListener('click', function () {
-                                if (confirm('Are you sure you want to delete this category?')) {
-                                    fetch(`/settings/delete_category/${this.dataset.id}`, {
-                                        method: 'POST'
-                                    })
-                                        .then(response => {
-                                            if (response.ok) {
-                                                loadCategories();
-                                            } else {
-                                                alert('Error deleting category');
-                                            }
-                                        })
-                                        .catch(error => {
-                                            console.error('Error:', error);
-                                            alert('Error deleting category');
-                                        });
-                                }
-                            });
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error loading categories');
                     });
             }
         });
+
+        // Goals Management
+        const goalModal = document.getElementById('goalModal');
+        const addGoalBtn = document.getElementById('addGoalBtn');
+        const goalModalClose = document.getElementById('goalModalClose');
+        const goalModalCancelBtn = document.getElementById('goalModalCancelBtn');
+        const goalForm = document.getElementById('goalForm');
+        const goalModalTitle = document.getElementById('goalModalTitle');
+
+        loadGoals();
+
+        addGoalBtn.addEventListener('click', function () {
+            goalModalTitle.textContent = 'Add Financial Goal';
+            goalForm.reset();
+            document.getElementById('goalId').value = '';
+            loadAccountCheckboxes();
+            goalModal.style.display = 'block';
+        });
+
+        goalModalClose.addEventListener('click', function () {
+            goalModal.style.display = 'none';
+        });
+
+        goalModalCancelBtn.addEventListener('click', function () {
+            goalModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', function (e) {
+            if (e.target == goalModal) {
+                goalModal.style.display = 'none';
+            }
+        });
+
+        function loadAccountCheckboxes(selectedIds = []) {
+            fetch('/settings/categories')  // We'll fetch accounts from the existing route
+                .then(response => response.json())
+                .then(() => {
+                    // Fetch accounts separately
+                    const accountsContainer = document.getElementById('accountCheckboxes');
+                    accountsContainer.innerHTML = '';
+
+                    // Get accounts from the page data
+                    const accounts = {{ accounts | tojson
+                }};
+
+        accounts.forEach(account => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `account_${account.id}`;
+            checkbox.value = account.id;
+            if (selectedIds.includes(account.id)) {
+                checkbox.checked = true;
+            }
+
+            const label = document.createElement('label');
+            label.htmlFor = `account_${account.id}`;
+            label.textContent = `${account.icon || '💰'} ${account.name}`;
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            accountsContainer.appendChild(div);
+        });
+        });
+}
+
+        goalForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const selectedAccounts = Array.from(
+                document.querySelectorAll('#accountCheckboxes input[type="checkbox"]:checked')
+            ).map(cb => parseInt(cb.value));
+
+            if (selectedAccounts.length === 0) {
+                alert('Please select at least one account');
+                return;
+            }
+
+            const goalId = document.getElementById('goalId').value;
+            const formData = {
+                goal_name: document.getElementById('goalName').value,
+                target_amount: parseFloat(document.getElementById('targetAmount').value),
+                time_period: document.getElementById('timePeriod').value,
+                account_ids: selectedAccounts
+            };
+
+            const url = goalId ? `/settings/edit_goal/${goalId}` : '/settings/add_goal';
+
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+                .then(response => {
+                    if (response.ok) {
+                        goalModal.style.display = 'none';
+                        loadGoals();
+                    } else {
+                        alert('Error saving goal');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error saving goal');
+                });
+        });
+
+        function loadGoals() {
+            fetch('/settings/goals')
+                .then(response => response.json())
+                .then(goals => {
+                    const list = document.getElementById('goalsList');
+
+                    if (goals.length === 0) {
+                        list.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">No goals yet. Create your first financial goal!</div>';
+                        return;
+                    }
+
+                    list.innerHTML = '';
+
+                    goals.forEach(goal => {
+                        const item = document.createElement('div');
+                        item.className = 'goal-item';
+
+                        const progressPercentage = Math.min(goal.progress, 100).toFixed(1);
+                        const statusColor = goal.progress >= 100 ? '#10b981' : goal.progress >= 50 ? '#f59e0b' : '#ef4444';
+
+                        item.innerHTML = `
+                    <div class="goal-header">
+                        <div class="goal-name">${goal.goal_name}</div>
+                        <div class="goal-actions">
+                            <button class="btn-edit" data-goal='${JSON.stringify(goal)}'>Edit</button>
+                            <button class="btn-delete" data-id="${goal.id}">Delete</button>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-details">
+                        <div class="goal-detail">
+                            <div class="goal-detail-label">Target</div>
+                            <div class="goal-detail-value">$${goal.target_amount.toFixed(2)}</div>
+                        </div>
+                        <div class="goal-detail">
+                            <div class="goal-detail-label">Current Savings</div>
+                            <div class="goal-detail-value" style="color: ${statusColor}">$${goal.current_savings.toFixed(2)}</div>
+                        </div>
+                        <div class="goal-detail">
+                            <div class="goal-detail-label">Time Period</div>
+                            <div class="goal-detail-value">${goal.time_period.charAt(0).toUpperCase() + goal.time_period.slice(1)}</div>
+                        </div>
+                        <div class="goal-detail">
+                            <div class="goal-detail-label">End Date</div>
+                            <div class="goal-detail-value">${goal.end_date}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-progress">
+                        <div class="progress-label">
+                            <span>Progress</span>
+                            <span style="font-weight: 700; color: ${statusColor}">${progressPercentage}%</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" style="width: ${progressPercentage}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="goal-accounts">
+                        <div class="goal-accounts-label">Tracking Accounts:</div>
+                        <div class="account-tags">
+                            ${goal.account_names.map(name => `<span class="account-tag">${name}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+
+                        list.appendChild(item);
+                    });
+
+                    // Attach event listeners
+                    document.querySelectorAll('.btn-edit').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const goal = JSON.parse(this.dataset.goal);
+                            editGoal(goal);
+                        });
+                    });
+
+                    document.querySelectorAll('.btn-delete').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            if (confirm('Are you sure you want to delete this goal?')) {
+                                deleteGoal(this.dataset.id);
+                            }
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error loading goals');
+                });
+        }
+
+        function editGoal(goal) {
+            goalModalTitle.textContent = 'Edit Financial Goal';
+            document.getElementById('goalId').value = goal.id;
+            document.getElementById('goalName').value = goal.goal_name;
+            document.getElementById('targetAmount').value = goal.target_amount;
+            document.getElementById('timePeriod').value = goal.time_period;
+
+            const accountIds = goal.account_ids.split(',').map(id => parseInt(id));
+            loadAccountCheckboxes(accountIds);
+
+            goalModal.style.display = 'block';
+        }
+
+        function deleteGoal(goalId) {
+            fetch(`/settings/delete_goal/${goalId}`, {
+                method: 'POST'
+            })
+                .then(response => {
+                    if (response.ok) {
+                        loadGoals();
+                    } else {
+                        alert('Error deleting goal');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting goal');
+                });
+        }
     </script>
+
 </body>
 
 </html>
