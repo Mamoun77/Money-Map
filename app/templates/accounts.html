@@ -38,9 +38,7 @@
                     </div>
                 </div>
                 <div class="account-balance" data-raw-balance="{{ account.balance }}"></div>
-                <div class="account-footer">
-                    <span>{{ account.transaction_count or '0' }} transactions</span>
-                </div>
+
             </div>
             {% endfor %}
             {% else %}
@@ -129,10 +127,12 @@
     </div>
 
     <script>
+        const userCurrency = '{{ user_currency }}';
+
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
-                currency: 'USD'
+                currency: userCurrency
             }).format(amount);
         }
 

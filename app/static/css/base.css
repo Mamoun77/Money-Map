@@ -335,7 +335,8 @@ body {
 }
 
 .btn-cancel {
-    background: #e5e5e5;
+    background: var(--bg-primary);
+    ;
     color: var(--text-primary);
 }
 
@@ -584,7 +585,8 @@ body {
 }
 
 .btn-cancel-camera {
-    background: #e5e5e5;
+    background: var(--bg-primary);
+    ;
     color: var(--text-primary);
 }
 

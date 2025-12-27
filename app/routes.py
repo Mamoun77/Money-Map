@@ -24,6 +24,22 @@ from flask import send_file
 import pandas as pd
 from io import BytesIO
 
+# for currency conversion
+from forex_python.converter import CurrencyRates
+
+def get_conversion_rate(from_currency='USD', to_currency='USD'):
+    """Get conversion rate once and cache it"""
+    if from_currency == to_currency:
+        return 1.0
+    
+    try:
+        c = CurrencyRates()
+        return c.get_rate(from_currency, to_currency)
+    except:
+        # Fallback to fixed rate if API fails
+        rates = {'USD': 1.0, 'JOD': 0.71}  # 1 USD = 0.71 JOD
+        return rates[to_currency] / rates[from_currency]
+
 
 # Store verification codes temporarily for multiple users
 verification_codes = {}
@@ -101,7 +117,6 @@ class FinancialGoal(db.Model):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     is_active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 def rendering_records_accounts_categories(): # For fetching records, accounts, and categories from the database for the current user
     records = db.session.query(Records, Accounts, Categories)\
@@ -236,7 +251,7 @@ def ai_agent():
     
     if request.method == 'POST':
         if not agent_initialized:
-            initialize_agent(current_user.username)
+            initialize_agent(current_user.username, current_user.email)
             agent_initialized = True
 
         query = request.form.get('query')
@@ -245,7 +260,7 @@ def ai_agent():
     
     else:  # if the method is GET
 
-        initialize_agent(current_user.username)
+        initialize_agent(current_user.username, current_user.email)
 
         records_list, accounts, categories = rendering_records_accounts_categories()
         return render_template('ai_agent.html',
@@ -254,11 +269,19 @@ def ai_agent():
                                 accounts=accounts,
                                 categories=categories)
 
+
 @app.route('/home')
 @login_required
 def home():
     from collections import defaultdict
     from sqlalchemy import func
+    
+    # Get user's currency preference
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate ONCE
+    conversion_rate = get_conversion_rate('USD', user_currency)
     
     # Fetch user's records from DB
     records_query = db.session.query(
@@ -273,13 +296,14 @@ def home():
         Records.user_id == current_user.id
     ).all()
     
-    # Calculate monthly averages
+    # Calculate monthly averages (convert all to user's currency)
     monthly_data = defaultdict(lambda: {'income': 0, 'spending': 0})
     category_totals = defaultdict(float)
     
     for record, category_name, account_name in records_query:
         month = record.date.strftime('%Y-%m')
-        amount = float(record.amount)
+        # Convert amount using the rate we fetched once
+        amount = float(record.amount) * conversion_rate
         
         if record.type == 'income':
             monthly_data[month]['income'] += amount
@@ -306,8 +330,9 @@ def home():
         'trend_spending': [monthly_data[m]['spending'] for m in sorted_months[-6:]] if len(sorted_months) >= 6 else [monthly_data[m]['spending'] for m in sorted_months]
     }
     
-    # Calculate total balance
+    # Calculate total balance (convert to user's currency)
     total_balance = db.session.query(func.sum(Accounts.balance)).filter_by(user_id=current_user.id).scalar() or 0
+    total_balance = float(total_balance) * conversion_rate
     
     # Calculate savings rate
     total_income = sum(m['income'] for m in monthly_data.values())
@@ -315,6 +340,10 @@ def home():
     savings_rate = int(((total_income - total_spending) / total_income * 100)) if total_income > 0 else 0
     
     records_list, accounts, categories = rendering_records_accounts_categories()
+    
+    # Convert account balances to user's currency
+    for account in accounts:
+        account.balance = float(account.balance) * conversion_rate
     
     return render_template('home.html',
                          username=current_user.username,
@@ -326,21 +355,33 @@ def home():
                          avg_income=f'{avg_income:.2f}',
                          top_category=max(category_totals, key=category_totals.get) if category_totals else 'N/A',
                          savings_rate=str(savings_rate),
-                         chart_data=chart_data)
+                         chart_data=chart_data,
+                         user_currency=user_currency)
 
 
 @app.route('/accounts')
 @login_required
 def accounts():
-
+    # Get user's currency preference
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate ONCE
+    conversion_rate = get_conversion_rate('USD', user_currency)
+    
     records_list, accounts, categories = rendering_records_accounts_categories()
-
+    
+    # Convert account balances to user's currency
+    for account in accounts:
+        account.balance = float(account.balance) * conversion_rate
     
     return render_template('accounts.html',
                          username=current_user.username,
                          records=records_list,
                          accounts=accounts,
-                         categories=categories)
+                         categories=categories,
+                         user_currency=user_currency)
+
 
 @app.route('/add_account', methods=['POST'])
 @login_required
@@ -386,14 +427,25 @@ def edit_account(account_id):
 @app.route('/records')
 @login_required
 def records():
-
+    # Get user's currency preference
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate 
+    conversion_rate = get_conversion_rate('USD', user_currency)
+    
     records_list, accounts, categories = rendering_records_accounts_categories()
+    
+    # Convert record amounts to user's currency
+    for record in records_list:
+        record['amount'] = float(record['amount']) * conversion_rate
     
     return render_template('records.html',
                          username=current_user.username,
                          records=records_list,
                          accounts=accounts,
-                         categories=categories)
+                         categories=categories,
+                         user_currency=user_currency)
 
 
 def check_spending_limits(user_id):
@@ -481,6 +533,13 @@ def check_spending_limits(user_id):
 @app.route('/add_record', methods=['POST'])
 @login_required
 def add_record():
+    # Get user's currency preference
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate FROM user currency TO USD
+    conversion_rate = get_conversion_rate(user_currency, 'USD')
+
     # Check if photo is included (AI mode)
     if 'photo' in request.files:
         photo = request.files['photo']
@@ -494,7 +553,7 @@ def add_record():
             try:
                 # Extract text from image
                 ocr_text = extract_text(tmp_path)
-                print(f"OCR Text: {ocr_text[:200]}")  # Print first 200 chars
+                print(f"OCR Text: {ocr_text[:200]}")
                 
                 # Get user's accounts and categories
                 accounts = [acc.name for acc in Accounts.query.filter_by(user_id=current_user.id).all()]
@@ -524,8 +583,6 @@ def add_record():
                 
                 print(f"Account found: {account}")
                 print(f"Category found: {category}")
-
-                # Add after "Category found" print
                 print(f"Category ID in parsed_data would be: {category.id if category else 'None'}")
                 print(f"Category name match: parsed='{parsed_data['category']}' vs found='{category.name if category else 'None'}'")
                 
@@ -533,7 +590,7 @@ def add_record():
                 new_record = Records(
                     user_id=current_user.id,
                     account_id=account.id if account else accounts_query[0].id,
-                    amount=parsed_data['amount'],
+                    amount=float(request.form.get('amount')) * conversion_rate,
                     category_id=category.id if category else None,
                     type=parsed_data['type'].lower(),
                     date=parsed_data['date'],
@@ -545,9 +602,17 @@ def add_record():
                 
                 db.session.add(new_record)
                 db.session.commit()
+                
+                # Update account balance
+                update_account = Accounts.query.get(new_record.account_id)
+                if new_record.type == 'income':
+                    update_account.balance += new_record.amount
+                else:
+                    update_account.balance -= new_record.amount
+                db.session.commit()
+                
                 print("Record committed to database")
 
-                # Add after "Record committed to database"
                 verify_record = Records.query.get(new_record.id)
                 print(f"Verified record - user_id: {verify_record.user_id}, category_id: {verify_record.category_id}, type: {verify_record.type}")
 
@@ -571,7 +636,7 @@ def add_record():
     new_record = Records(
         user_id=current_user.id,
         account_id=int(request.form.get('account')),
-        amount=request.form.get('amount'),
+        amount=float(request.form.get('amount')) * conversion_rate,
         category_id=int(request.form.get('category')),
         type=request.form.get('type'),
         date=request.form.get('date'),
@@ -581,11 +646,19 @@ def add_record():
 
     db.session.add(new_record)
     db.session.commit()
+    
+    # Update account balance
+    account = Accounts.query.get(new_record.account_id)
+    if new_record.type == 'income':
+        account.balance += new_record.amount
+    else:
+        account.balance -= new_record.amount
+    db.session.commit()
 
     check_spending_limits(current_user.id)
     check_goal_achievements(current_user.id)
 
-    return '', 204 # No Content returned, just that the addition was successful
+    return '', 204
 
 @app.route('/delete_record/<int:record_id>', methods=['POST'])
 @login_required
@@ -601,21 +674,48 @@ def delete_record(record_id):
 @login_required
 def update_record(record_id):
     data = request.get_json()
+    
+    # Get user's currency to convert back to USD
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate to convert FROM user currency TO USD
+    conversion_rate = get_conversion_rate(user_currency, 'USD')
 
-    record = Records.query.get(data.get('id'))
+    record = Records.query.get(record_id)
+    
+    # Store old values before updating
+    old_amount = record.amount
+    old_account_id = record.account_id
+    old_type = record.type
     
     # Convert account name to ID
     account = Accounts.query.filter_by(user_id=current_user.id, name=data.get('account')).first()
     # Convert category name to ID
     category = Categories.query.filter_by(user_id=current_user.id, name=data.get('category')).first()
 
+    # Update record
     record.account_id = account.id if account else record.account_id
-    record.amount = data.get('amount')
+    record.amount = float(data.get('amount')) * conversion_rate
     record.category_id = category.id if category else record.category_id
     record.type = data.get('type')
     record.date = data.get('date')
     record.time = data.get('time')
     record.description = data.get('description')
+    
+    # Update old account (reverse old transaction)
+    old_account = Accounts.query.get(old_account_id)
+    if old_type == 'income':
+        old_account.balance -= old_amount
+    else:
+        old_account.balance += old_amount
+    
+    # Update new account (apply new transaction)
+    new_account = Accounts.query.get(record.account_id)
+    if record.type == 'income':
+        new_account.balance += record.amount
+    else:
+        new_account.balance -= record.amount
     
     db.session.commit()
 
@@ -630,6 +730,7 @@ def update_record(record_id):
 def settings():
     # Fetch user settings from database
     user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
     
     # If no settings exist, create default ones
     if not user_settings:
@@ -639,6 +740,7 @@ def settings():
 
     records_list, accounts, categories = rendering_records_accounts_categories()
 
+    # No conversion needed for accounts_list since it's just for display names
     accounts_list = [{'id': acc.id, 'name': acc.name, 'icon': acc.icon, 'balance': float(acc.balance)} for acc in accounts]
 
     return render_template('settings.html',
@@ -646,43 +748,79 @@ def settings():
                          language=user_settings.language,
                          notifications=user_settings.notification_enabled,
                          username=current_user.username,
+                         first_name=current_user.first_name,
+                         last_name=current_user.last_name,
+                         email=current_user.email,
                          records=records_list,
                          accounts=accounts_list,
-                         categories=categories)
+                         categories=categories,
+                         user_currency=user_currency)
+
 
 @app.route('/save_settings', methods=['POST'])
 @login_required
 def save_settings():
-    currency = request.form.get('currency', 'USD')
-    language = request.form.get('language', 'en')
-    notifications = request.form.get('notifications') == 'on'
-    first_name = request.form.get('first_name')
-    last_name = request.form.get('last_name')
-    email = request.form.get('email')
-    username = request.form.get('username')
-    password = request.form.get('password')
-    
-    # Update user settings in UserSettings table
-    settings = UserSettings.query.filter_by(user_id=current_user.id).first()
-    if settings:
-        settings.currency = currency
-        settings.language = language
-        settings.notification_enabled = notifications
-    
-    # Update user information in Users table
-    user = User.query.get(current_user.id)
-    user.first_name = first_name
-    user.last_name = last_name
-    user.email = email
-    user.username = username
-    
-    # Update password only if provided
-    if password:
-        user.password = generate_password_hash(password)
-    
-    db.session.commit()
-    
-    return '', 204
+    try:
+        currency = request.form.get('currency', 'USD')
+        language = request.form.get('language', 'en')
+        notifications = request.form.get('notifications') == 'on'
+        first_name = request.form.get('first_name', '').strip()
+        last_name = request.form.get('last_name', '').strip()
+        email = request.form.get('email', '').strip()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        # Validate required fields
+        if not email or not username:
+            return jsonify({'error': 'Email and username are required'}), 400
+        
+        # Check if email is taken by another user
+        existing_email = User.query.filter(User.email == email, User.id != current_user.id).first()
+        if existing_email:
+            return jsonify({'error': 'Email already in use'}), 400
+        
+        # Check if username is taken by another user
+        existing_username = User.query.filter(User.username == username, User.id != current_user.id).first()
+        if existing_username:
+            return jsonify({'error': 'Username already in use'}), 400
+        
+        # Update user settings in UserSettings table
+        settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+        if settings:
+            settings.currency = currency
+            settings.language = language
+            settings.notification_enabled = notifications
+        else:
+            # Create settings if they don't exist
+            settings = UserSettings(
+                user_id=current_user.id,
+                currency=currency,
+                language=language,
+                notification_enabled=notifications
+            )
+            db.session.add(settings)
+        
+        # Update user information in Users table
+        user = User.query.get(current_user.id)
+        if user:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.email = email
+            user.username = username
+            
+            # Update password only if provided
+            if password:
+                user.password = generate_password_hash(password)
+        
+        db.session.commit()
+        
+        return '', 204
+    except Exception as e:
+        print(f"Error saving settings: {e}")
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/settings/categories', methods=['GET'])
 @login_required
 def get_categories():
@@ -936,19 +1074,25 @@ def export_csv():
 @app.route('/settings/goals', methods=['GET'])
 @login_required
 def get_goals():
+    # Get user's currency preference
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate ONCE
+    conversion_rate = get_conversion_rate('USD', user_currency)
+    
     goals = FinancialGoal.query.filter_by(user_id=current_user.id, is_active=True).all()
     
-    goals_list = [] # the list that will be passed to the front end
+    goals_list = []
     for goal in goals:
         # Calculate progress
         account_ids = [int(x) for x in goal.account_ids.split(',')]
 
-        # Calculate income and expenses for selected accounts in the time range of the gaol
         income = db.session.query(func.sum(Records.amount))\
             .filter(Records.user_id == current_user.id,
                    Records.type == 'income',
                    Records.account_id.in_(account_ids),
-                   Records.date >= goal.start_date, # in the time range of the goal
+                   Records.date >= goal.start_date,
                    Records.date <= goal.end_date).scalar() or 0
         
         expenses = db.session.query(func.sum(Records.amount))\
@@ -960,7 +1104,11 @@ def get_goals():
             .scalar() or 0
         
         current_savings = float(income) - float(expenses)
-        progress = (current_savings / float(goal.target_amount) * 100) if goal.target_amount > 0 else 0
+        # Convert amounts to user's currency
+        current_savings_converted = current_savings * conversion_rate
+        target_amount_converted = float(goal.target_amount) * conversion_rate
+        
+        progress = max(0, (current_savings / float(goal.target_amount) * 100) if goal.target_amount > 0 else 0)
         
         # Get account names
         accounts = Accounts.query.filter(Accounts.id.in_(account_ids)).all()
@@ -969,8 +1117,8 @@ def get_goals():
         goals_list.append({
             'id': goal.id,
             'goal_name': goal.goal_name,
-            'target_amount': float(goal.target_amount),
-            'current_savings': current_savings,
+            'target_amount': target_amount_converted,
+            'current_savings': current_savings_converted,
             'progress': min(progress, 100),
             'time_period': goal.time_period,
             'account_names': account_names,
@@ -981,10 +1129,19 @@ def get_goals():
     
     return jsonify(goals_list)
 
+
+
 @app.route('/settings/add_goal', methods=['POST'])
 @login_required
 def add_goal():
     data = request.get_json()
+    
+    # Get user's currency to convert back to USD
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate FROM user currency TO USD
+    conversion_rate = get_conversion_rate(user_currency, 'USD')
     
     # Calculate dates based on time period
     start_date = date.today()
@@ -997,10 +1154,13 @@ def add_goal():
     else:  # year
         end_date = start_date + timedelta(days=365)
     
+    # Convert target amount to USD for storage
+    target_amount_usd = float(data.get('target_amount')) * conversion_rate
+    
     new_goal = FinancialGoal(
         user_id=current_user.id,
         goal_name=data.get('goal_name'),
-        target_amount=data.get('target_amount'),
+        target_amount=target_amount_usd,
         time_period=time_period,
         account_ids=','.join(map(str, data.get('account_ids'))),
         start_date=start_date,
@@ -1027,9 +1187,17 @@ def edit_goal(goal_id):
     data = request.get_json()
     goal = FinancialGoal.query.get(goal_id)
     
+    # Get user's currency to convert back to USD
+    user_settings = UserSettings.query.filter_by(user_id=current_user.id).first()
+    user_currency = user_settings.currency if user_settings else 'USD'
+    
+    # Get conversion rate FROM user currency TO USD
+    conversion_rate = get_conversion_rate(user_currency, 'USD')
+    
     if goal and goal.user_id == current_user.id:
         goal.goal_name = data.get('goal_name')
-        goal.target_amount = data.get('target_amount')
+        # Convert target amount to USD for storage
+        goal.target_amount = float(data.get('target_amount')) * conversion_rate
         goal.account_ids = ','.join(map(str, data.get('account_ids')))
         
         # Recalculate end date if time period changed

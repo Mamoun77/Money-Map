@@ -248,10 +248,12 @@
             });
         }
         // Currency formatter
+        const userCurrency = '{{ user_currency }}';
+
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
                 style: 'currency',
-                currency: 'USD'
+                currency: userCurrency
             }).format(amount);
         }
 
@@ -266,7 +268,7 @@
             document.getElementById('editDescription').value = recordElement.querySelector('.record-description').textContent;
             document.getElementById('editType').value = recordElement.dataset.type;
             const amountText = recordElement.querySelector('.record-amount').dataset.rawAmount;
-            document.getElementById('editAmount').value = Math.abs(parseFloat(amountText));
+            document.getElementById('editAmount').value = Math.abs(parseFloat(amountText)).toFixed(2);
             document.getElementById('editCategory').value = recordElement.dataset.category;
             document.getElementById('editAccount').value = recordElement.dataset.account;
             document.getElementById('editDate').value = recordElement.dataset.date;
@@ -284,6 +286,7 @@
         function saveRecord() {
             const recordId = document.getElementById('editRecordId').value;
             const formData = {
+                id: recordId,  // ADD THIS LINE
                 description: document.getElementById('editDescription').value,
                 type: document.getElementById('editType').value,
                 amount: document.getElementById('editAmount').value,
@@ -430,7 +433,7 @@
         // Format currency on page load
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.record-amount').forEach(el => {
-                const rawAmount = parseFloat(el.dataset.rawAmount);
+                const rawAmount = parseFloat(parseFloat(el.dataset.rawAmount).toFixed(2));
                 const isIncome = el.classList.contains('amount-income');
                 el.textContent = (isIncome ? '+' : '-') + formatCurrency(Math.abs(rawAmount));
             });
