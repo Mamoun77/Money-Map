@@ -5,4 +5,5 @@ COPY app/ .
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["gunicorn", "-b", "0.0.0.0:$PORT", "routes:app"]
+ENV PORT=8080
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "routes:app"]
