@@ -4,7 +4,8 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from google.genai import types
 import os
 
-load_dotenv('C:\My Projects\Health-Navigator\credentials.env')
+# Adjust relative path or rely on system envs
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../../../credentials.env'))
 
 system_prompt = """
 

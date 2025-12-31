@@ -9,14 +9,18 @@ import os
 # Import the email tool
 from .email_tool import send_financial_report_email
 
-load_dotenv(os.path.join(r'C:\My Projects\Money-Map\credentials.env'))
+# Load environment variables from the root credentials.env if available
+# Adjust relative path as needed: current dir -> conversational_ai_agent -> ai_integrations -> app -> root
+load_dotenv(os.path.join(os.path.dirname(__file__), '../../../../credentials.env'))
 
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-preview-09-2025",
     google_api_key=os.getenv("GOOGLE_API_KEY"),
 )
 
-mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{os.getenv("MYSQL_PORT")}/{os.getenv("DATABASE_NAME")}'
+# Use default port 3306 if MYSQL_PORT is not set
+db_port = os.getenv("MYSQL_PORT", "3306")
+mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{db_port}/{os.getenv("DATABASE_NAME")}'
 db = SQLDatabase.from_uri(mysql_uri)
 
 agent = None
