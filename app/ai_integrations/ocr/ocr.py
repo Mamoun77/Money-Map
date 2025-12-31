@@ -2,9 +2,7 @@ import os
 from dotenv import load_dotenv
 from google.cloud import vision
 
-load_dotenv('C:\My Projects\Health-Navigator\credentials.env')
-
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = "C:\My Projects\Money-Map\gen-lang-client-0704427172-e146f940df9a.json"
+# load_dotenv('C:\My Projects\Health-Navigator\credentials.env')
 
 client = vision.ImageAnnotatorClient()
 

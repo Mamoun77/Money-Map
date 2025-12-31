@@ -3,9 +3,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-load_dotenv(os.path.join(r'C:\My Projects\Money-Map\credentials.env'))
+# load_dotenv(os.path.join(r'C:\My Projects\Money-Map\credentials.env'))
 
 @tool
 def send_financial_report_email(report_content: str, user_email: str) -> str:
@@ -19,8 +19,8 @@ def send_financial_report_email(report_content: str, user_email: str) -> str:
     Returns:
         str: Success or failure message
     """
-    from_email = os.getenv('APP_ACCOUNT_EMAIL_ADDRESS')
-    password = os.getenv('APP_ACCOUNT_PASSWORD')
+    from_email = os.environ('APP_ACCOUNT_EMAIL_ADDRESS')
+    password = os.environ('APP_ACCOUNT_PASSWORD')
     
     msg = MIMEMultipart()
     msg['From'] = from_email

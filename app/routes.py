@@ -5,7 +5,6 @@ from sqlalchemy import func
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import date, timedelta, datetime
 import tempfile
-from dotenv import load_dotenv
 import os
 
 import random
@@ -44,12 +43,11 @@ def get_conversion_rate(from_currency='USD', to_currency='USD'):
 # Store verification codes temporarily for multiple users
 verification_codes = {}
 
-load_dotenv('../credentials.env') #load environment variables (credentials and API keys) from a .env file
 
 app = Flask(__name__)
 
-app.secret_key = os.getenv('SECRET_KEY')  # Add SECRET_KEY to your .env file
-app.config['SQLALCHEMY_DATABASE_URI'] = (f"""mysql+pymysql://{os.getenv('MYSQL_USERNAME')}:{os.getenv('MYSQL_PASSWORD')}@{os.getenv('MYSQL_HOST')}/{os.getenv('DATABASE_NAME')}""")
+app.secret_key = os.environ['SECRET_KEY']  # Add SECRET_KEY to your .env file
+app.config['SQLALCHEMY_DATABASE_URI'] = (f"""mysql+pymysql://{os.environ['MYSQL_USERNAME']}:{os.environ['MYSQL_PASSWORD']}@{os.environ['MYSQL_HOST']}/{os.environ['DATABASE_NAME']}""")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -887,8 +885,8 @@ def update_theme():
 
 def send_verification_email(to_email, code):
     """Send verification code via email"""
-    from_email = os.getenv('APP_ACCOUNT_EMAIL_ADDRESS')
-    password = os.getenv('APP_ACCOUNT_PASSWORD')
+    from_email = os.environ['APP_ACCOUNT_EMAIL_ADDRESS']
+    password = os.environ['APP_ACCOUNT_PASSWORD']
     
     msg = MIMEMultipart()
     msg['From'] = from_email

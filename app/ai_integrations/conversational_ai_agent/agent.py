@@ -3,20 +3,18 @@ from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain_community.utilities.sql_database import SQLDatabase
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import os
 
 # Import the email tool
 from .email_tool import send_financial_report_email
 
-load_dotenv(os.path.join(r'C:\My Projects\Money-Map\credentials.env'))
-
 llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-preview-09-2025",
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
+    google_api_key=os.environ["GOOGLE_API_KEY"],
 )
 
-mysql_uri = f'mysql+mysqlconnector://{os.getenv("MYSQL_USERNAME")}:{os.getenv("MYSQL_PASSWORD")}@{os.getenv("MYSQL_HOST")}:{os.getenv("MYSQL_PORT")}/{os.getenv("DATABASE_NAME")}'
+mysql_uri = f'mysql+mysqlconnector://{os.environ["MYSQL_USERNAME"]}:{os.environ["MYSQL_PASSWORD"]}@{os.environ["MYSQL_HOST"]}:{os.environ["MYSQL_PORT"]}/{os.environ["DATABASE_NAME"]}'
 db = SQLDatabase.from_uri(mysql_uri)
 
 agent = None

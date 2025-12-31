@@ -4,7 +4,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from google.genai import types
 import os
 
-load_dotenv('C:\My Projects\Health-Navigator\credentials.env')
 
 system_prompt = """
 
@@ -118,7 +117,7 @@ class FinancialRecordOutput(TypedDict):
 
 structured_llm = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash-lite",
-    google_api_key=os.getenv("GOOGLE_API_KEY"),
+    google_api_key=os.environ["GOOGLE_API_KEY"],
     
     ).with_structured_output(FinancialRecordOutput)
 
