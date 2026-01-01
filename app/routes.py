@@ -588,7 +588,7 @@ def add_record():
                 new_record = Records(
                     user_id=current_user.id,
                     account_id=account.id if account else accounts_query[0].id,
-                    amount=float(request.form.get('amount')) * conversion_rate,
+                    amount=float(parsed_data['amount']) * conversion_rate,
                     category_id=category.id if category else None,
                     type=parsed_data['type'].lower(),
                     date=parsed_data['date'],
@@ -1268,3 +1268,6 @@ def check_goal_achievements(user_id):
                 db.session.add(notif)
     
     db.session.commit()
+
+
+# app.run(debug=True)
