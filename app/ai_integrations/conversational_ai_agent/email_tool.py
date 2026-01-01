@@ -19,8 +19,8 @@ def send_financial_report_email(report_content: str, user_email: str) -> str:
     Returns:
         str: Success or failure message
     """
-    from_email = os.environ('APP_ACCOUNT_EMAIL_ADDRESS')
-    password = os.environ('APP_ACCOUNT_PASSWORD')
+    from_email = os.environ['APP_ACCOUNT_EMAIL_ADDRESS']
+    password = os.environ['APP_ACCOUNT_PASSWORD']
     
     msg = MIMEMultipart()
     msg['From'] = from_email
