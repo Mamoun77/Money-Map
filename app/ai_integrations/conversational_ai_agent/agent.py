@@ -10,7 +10,7 @@ import os
 from .email_tool import send_financial_report_email
 
 llm = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash-preview-09-2025",
+    model="gemini-2.5-flash-lite-preview-09-2025",
     google_api_key=os.environ["GOOGLE_API_KEY"],
 )
 
@@ -55,6 +55,11 @@ def initialize_agent(username, user_email):
         - Confirm to the user that the report has been sent
         - Format the report text clearly for readability
         - Include specific numbers, percentages, and actionable insights in reports
+
+
+        Todays date and time now is: {time.strftime("%Y-%m-%d %H:%M:%S")} format: YYYY-MM-DD HH:MM:SS
+
+        Be accurate about the users reqeusts.
         """
     
     toolkit = SQLDatabaseToolkit(db=db, llm=llm)
