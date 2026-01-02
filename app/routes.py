@@ -24,20 +24,56 @@ import pandas as pd
 from io import BytesIO
 
 # for currency conversion
-from forex_python.converter import CurrencyRates
+import requests
+import time
+
+# Simple in-memory cache for currency rates
+# Structure: { 'FROM_TO': (rate, timestamp) }
+_currency_cache = {}
+CACHE_DURATION = 48 * 3600  # 48 hours in seconds
 
 def get_conversion_rate(from_currency='USD', to_currency='USD'):
-    """Get conversion rate once and cache it"""
+    """Get conversion rate with caching and timeout"""
     if from_currency == to_currency:
         return 1.0
     
+    cache_key = f"{from_currency}_{to_currency}"
+    current_time = time.time()
+
+    # Check cache
+    if cache_key in _currency_cache:
+        rate, timestamp = _currency_cache[cache_key]
+        if current_time - timestamp < CACHE_DURATION:
+            return rate
+
+    # Define fallback rates
+    fallback_rates = {'USD': 1.0, 'JOD': 0.71}  # 1 USD = 0.71 JOD
+
     try:
-        c = CurrencyRates()
-        return c.get_rate(from_currency, to_currency)
+        # Try to fetch from a reliable free API with a strict timeout
+        response = requests.get(
+            f"https://open.er-api.com/v6/latest/{from_currency}",
+            timeout=3
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        rate = data['rates'].get(to_currency)
+        if rate:
+            _currency_cache[cache_key] = (rate, current_time)
+            return rate
+
+    except Exception as e:
+        print(f"Currency fetch failed: {e}. Using fallback.")
+
+    # Fallback logic
+    try:
+        if from_currency in fallback_rates and to_currency in fallback_rates:
+            return fallback_rates[to_currency] / fallback_rates[from_currency]
     except:
-        # Fallback to fixed rate if API fails
-        rates = {'USD': 1.0, 'JOD': 0.71}  # 1 USD = 0.71 JOD
-        return rates[to_currency] / rates[from_currency]
+        pass
+
+    return 1.0 # Default if everything fails
 
 
 # Store verification codes temporarily for multiple users
