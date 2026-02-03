@@ -74,7 +74,6 @@ def initialize_agent(username, user_email):
     print(f"Agent initialized in {initialization_time:.2f} seconds.")
 
 def invoke_agent(user_query):
-    global current_user_email
     
     response = agent.invoke({
         "messages": [
